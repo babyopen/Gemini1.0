@@ -1,0 +1,1540 @@
+/* 历史记录页面专属样式 */
+/* 记录页面样式 */
+.record-container {
+  padding: 20px 0;
+  width: 100%;
+  margin: 0 auto;
+  max-width: 1000px;
+  box-sizing: border-box;
+}
+
+/* 记录折叠容器样式 */
+.record-collapse-container {
+  width: 100%;
+  margin-bottom: 12px;
+  border-radius: var(--ios-corner-radius);
+  overflow: hidden;
+  box-shadow: var(--ios-shadow-sm);
+  background: var(--ios-gray-50);
+}
+
+.record-collapse-header {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  position: relative;
+  border-bottom: 0.3px solid transparent;
+}
+
+.record-collapse-header-content {
+  flex: 1;
+  margin-right: 12px;
+}
+
+.record-collapse-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  margin: -8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ios-gray-400);
+  transition: var(--ios-transition);
+  flex-shrink: 0;
+}
+
+.record-collapse-toggle:hover,
+.record-collapse-toggle:focus {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ios-gray-600);
+}
+
+.record-collapse-icon {
+  transition: transform 0.3s ease;
+  transform: rotate(0deg);
+}
+
+.record-collapse-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  opacity: 0;
+}
+
+.record-collapse-content:not(.collapsed) {
+  max-height: 2000px;
+  opacity: 1;
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .record-collapse-container {
+    background: rgba(30, 30, 30, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .record-collapse-toggle {
+    color: var(--ios-gray-300);
+  }
+  
+  .record-collapse-toggle:hover,
+  .record-collapse-toggle:focus {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--ios-gray-100);
+  }
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.record-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ios-gray-600);
+}
+
+.record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+/* 液态玻璃卡片 */
+.record-item {
+  background: var(--ios-gray-50);
+  border-radius: var(--ios-corner-radius);
+  box-shadow: var(--ios-shadow-sm);
+  padding: 16px;
+  position: relative;
+  border: 0.3px solid transparent;
+  transition: var(--ios-transition);
+  margin-bottom: 0;
+  box-sizing: border-box;
+}
+
+.record-item:active {
+  transform: scale(0.98);
+  box-shadow: var(--ios-shadow-xs);
+}
+
+.record-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 0.3px solid transparent;
+  box-sizing: border-box;
+}
+
+.record-item-issue {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ios-gray-600);
+}
+
+.record-item-time {
+  font-size: 13px;
+  color: var(--ios-gray-400);
+}
+
+.record-item-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.record-item-zodiacs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* 玻璃胶囊标签 */
+.record-item-zodiac {
+  min-height: 42px;
+  padding: 8px 6px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--ios-gray-100);
+  border: 0.3px solid transparent;
+  color: var(--ios-gray-600);
+  transition: var(--ios-transition);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* 选中态系统蓝 */
+.record-item-zodiac.matched {
+  background: var(--ios-blue);
+  color: #fff;
+  border-color: var(--ios-blue);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.record-item.mismatch {
+  border-left: 4px solid var(--ios-red);
+}
+
+.record-item-numbers {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+.record-item-number {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--ios-gray-100);
+  border: 0.3px solid transparent;
+  color: var(--ios-gray-600);
+  transition: var(--ios-transition);
+}
+
+.record-item-number.matched {
+  background: var(--ios-blue);
+  color: #fff;
+  border-color: var(--ios-blue);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.record-item-type {
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--ios-gray-600);
+  align-self: flex-start;
+  background: var(--ios-gray-100);
+  border: 0.3px solid transparent;
+}
+
+/* 位置样式 */
+.record-item-zodiac.position-1 {
+  font-weight: 700;
+  color: var(--ios-gray-600);
+}
+
+.record-item-zodiac.position-2 {
+  font-weight: 700;
+  color: var(--ios-gray-600);
+}
+
+.record-item-zodiac.position-3 {
+  font-weight: 700;
+  color: var(--ios-gray-600);
+}
+
+.record-item-zodiac.position-4,
+.record-item-zodiac.position-5,
+.record-item-zodiac.position-6 {
+  font-weight: 500;
+  color: var(--ios-gray-600);
+}
+
+.record-item-actual {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ios-gray-600);
+  background: var(--ios-gray-100);
+  border: 0.3px solid transparent;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.record-item-actual.hit {
+  color: var(--ios-green);
+  font-weight: 700;
+  background: rgba(52, 199, 89, 0.1);
+  border-color: var(--ios-green);
+}
+
+.record-item-actual.miss {
+  color: var(--ios-red);
+  font-weight: 700;
+  background: rgba(255, 69, 58, 0.1);
+  border-color: var(--ios-red);
+}
+
+/* 期数数据样式 */
+.record-item-periods {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 0.3px solid transparent;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.record-item-period {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  align-items: start;
+  margin-bottom: 8px;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.record-item-period:last-child {
+  margin-bottom: 0;
+}
+
+.period-label {
+  font-size: 12px;
+  color: var(--ios-gray-400);
+  min-width: 40px;
+}
+
+.period-zodiacs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.period-zodiac {
+  min-height: 38px;
+  padding: 6px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--ios-gray-100);
+  border: 0.3px solid transparent;
+  color: var(--ios-gray-600);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.period-zodiac-hit {
+  background: rgba(82, 196, 26, 0.2);
+  border-color: #52c41a;
+  color: #52c41a;
+  font-weight: 600;
+  box-shadow: 0 0 0 1px rgba(82, 196, 26, 0.3);
+}
+
+/* 期数开奖核对结果 */
+.period-actual {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ios-gray-600);
+  background: var(--ios-gray-100);
+  border: 0.3px solid transparent;
+  align-self: center;
+  white-space: nowrap;
+  margin-left: 4px;
+}
+
+.period-actual-hit {
+  color: #52c41a;
+  background: rgba(82, 196, 26, 0.1);
+}
+
+.period-actual-miss {
+  color: #f5222d;
+  background: rgba(245, 34, 45, 0.1);
+}
+
+/* 结果样式 */
+.record-item-result {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.record-item-result .record-item-actual {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.record-item-result .record-item-actual.hit {
+  color: #52c41a;
+  font-weight: 700;
+}
+
+.record-item-result .record-item-actual.miss {
+  color: #ff4d4f;
+  font-weight: 700;
+}
+
+.record-item-status {
+  font-size: 12px;
+  color: var(--sub-text);
+}
+
+.record-item-checked {
+  color: #52c41a;
+  font-weight: 600;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .record-container {
+    padding: 16px;
+  }
+  
+  .record-item {
+    padding: 16px;
+  }
+  
+  .record-item-header {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+  }
+  
+  .record-item-issue {
+    font-size: 14px;
+  }
+  
+  .record-item-zodiac {
+    min-height: 38px;
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+
+  .record-item-period {
+    grid-template-columns: 38px 1fr auto;
+    gap: 6px;
+  }
+
+  .period-zodiacs {
+    gap: 6px;
+  }
+  
+  .record-item-number {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+/* 记录页：深色模式（合并为一处，便于维护） */
+@media (prefers-color-scheme: dark) {
+  .record-container {
+    background: var(--bg);
+  }
+
+  .record-header h2 {
+    color: var(--text);
+  }
+
+  .record-header .btn-mini {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: var(--primary);
+  }
+
+  .record-item {
+    background: rgba(30, 30, 30, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .record-item-issue {
+    color: var(--text);
+  }
+
+  .record-item-time {
+    color: var(--sub-text);
+  }
+
+  .record-item-zodiac {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .record-item-zodiac.position-4,
+  .record-item-zodiac.position-5,
+  .record-item-zodiac.position-6 {
+    border-color: var(--ios-gray-200);
+    color: var(--text);
+  }
+
+  .record-item-zodiac.position-1,
+  .record-item-zodiac.position-2,
+  .record-item-zodiac.position-3 {
+    color: var(--text);
+  }
+
+  .record-item-number {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .record-item-type {
+    background: var(--ios-gray-600);
+    border: 0.3px solid transparent;
+    color: var(--text);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .record-item-actual {
+    background: var(--ios-gray-600);
+    border: 0.3px solid transparent;
+    color: var(--text);
+  }
+
+  .record-item-result {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .period-label {
+    color: var(--sub-text);
+  }
+
+  .period-zodiac {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .period-actual {
+    background: var(--ios-gray-600);
+    border: 0.3px solid transparent;
+    color: var(--text);
+  }
+
+  .period-actual-hit {
+    color: #52c41a;
+    background: rgba(82, 196, 26, 0.2);
+  }
+
+  .period-actual-miss {
+    color: #f5222d;
+    background: rgba(245, 34, 45, 0.2);
+  }
+
+  .period-zodiac-hit {
+    background: rgba(82, 196, 26, 0.3);
+    border-color: #52c41a;
+    color: #52c41a;
+    font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(82, 196, 26, 0.4);
+  }
+
+  .record-item-status {
+    color: var(--sub-text);
+  }
+}
+
+/* 灵动岛适配 */
+@media (max-width: 480px) {
+  .record-container {
+    padding: 16px 12px;
+  }
+  
+  .record-item {
+    border-radius: 14px;
+  }
+  
+  .record-item-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .record-item-zodiacs {
+    gap: 6px;
+    flex: none;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .record-item-zodiac {
+    min-height: 34px;
+    padding: 5px 2px;
+    font-size: 11px;
+  }
+
+  .record-item-period {
+    grid-template-columns: 34px 1fr auto;
+    gap: 6px;
+  }
+
+  .period-zodiacs {
+    gap: 5px;
+  }
+
+  .period-zodiac {
+    min-height: 32px;
+    font-size: 11px;
+    padding: 4px 2px;
+  }
+  
+  .record-item-number {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+}
+
+.history-label {
+  font-size: var(--font-size-sm);
+  color: var(--sub-text);
+  margin-bottom: var(--spacing-xs);
+}
+
+.history-value {
+  font-size: var(--font-size-md);
+  color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .history-col {
+    min-width: 100%;
+    flex: 0 0 100%;
+  }
+  
+  .history-row {
+    flex-direction: column;
+  }
+}
+
+/* 记录页面样式 */
+
+/* 记录页面导航 */
+.record-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 90;
+}
+
+.record-nav-left .logo {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.record-nav-center .nav-tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  background: var(--bg-secondary);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.record-nav-center .nav-tab {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  background: transparent;
+  color: var(--sub-text);
+  cursor: pointer;
+  transition: all var(--anim-fast);
+  white-space: nowrap;
+}
+
+.record-nav-center .nav-tab.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.record-nav-right .nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* 记录页面内容 */
+.record-content {
+  padding: var(--spacing-lg);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* 记录卡片 */
+.record-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: all var(--anim-normal);
+}
+
+.record-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-bottom: 1px solid var(--border);
+}
+
+.record-card-header h2 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.filter-controls {
+  position: relative;
+}
+
+.record-card-body {
+  padding: var(--spacing-lg) var(--spacing-xl);
+}
+
+/* 最新开奖信息 */
+.latest-draw-info {
+  text-align: center;
+  padding: var(--spacing-xl) 0;
+}
+
+.draw-period {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--spacing-md);
+}
+
+.draw-time {
+  font-size: var(--font-size-md);
+  color: var(--sub-text);
+  margin-bottom: var(--spacing-lg);
+}
+
+.draw-numbers {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+/* 记录表格 */
+.record-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-md);
+}
+
+.record-table th {
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  text-align: left;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 2px solid var(--border);
+}
+
+.record-table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* 底部信息 */
+.record-footer {
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  padding: var(--spacing-xl);
+  margin-top: var(--spacing-xxl);
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.footer-link {
+  color: var(--sub-text);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+}
+
+.footer-copyright {
+  font-size: var(--font-size-xs);
+  color: var(--sub-text);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .record-nav {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+  
+  .record-nav-center .nav-tabs {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .record-content {
+    padding: var(--spacing-md);
+  }
+  
+  .record-card-header {
+    padding: var(--spacing-md);
+  }
+  
+  .record-card-body {
+    padding: var(--spacing-md);
+  }
+  
+  .record-table {
+    font-size: var(--font-size-sm);
+  }
+  
+  .record-table th,
+  .record-table td {
+    padding: var(--spacing-sm);
+  }
+  
+  .footer-links {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .record-nav-center .nav-tab {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+  
+  .record-card-header h2 {
+    font-size: var(--font-size-md);
+  }
+  
+  .draw-period {
+    font-size: var(--font-size-md);
+  }
+  
+  .draw-time {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* ============================================================================
+   iOS风格记录卡片设计
+   ============================================================================ */
+
+/* 双端通用iOS风格卡片 */
+.period-card {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 20px;
+  margin: 12px 16px;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+/* 支持毛玻璃的设备（iOS/安卓高版本）自动生效 */
+@supports (-webkit-backdrop-filter: blur(20px)) {
+  .period-card {
+    background: rgba(255, 255, 255, 0.8);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .period-card {
+    background: rgba(30, 30, 30, 0.92);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  @supports (-webkit-backdrop-filter: blur(20px)) {
+    .period-card {
+      background: rgba(30, 30, 30, 0.8);
+    }
+  }
+}
+
+/* 标题栏 */
+.period-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.period-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1C1C1E;
+  margin: 0;
+}
+
+.period-time {
+  font-size: 14px;
+  color: #98989F;
+  margin-right: 8px;
+}
+
+.period-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 生肖标签容器 - 6列等宽网格布局（完美对齐） */
+.zodiac-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* 生肖标签基础样式 */
+.zodiac-tag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  background: rgba(120, 120, 128, 0.08);
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1C1C1E;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+/* 标签点击反馈 */
+.zodiac-tag:active {
+  transform: scale(0.96);
+  background: rgba(120, 120, 128, 0.12);
+}
+
+/* 选中/高亮态（如你图中的"虎"标签） */
+.zodiac-tag.active {
+  background: rgba(255, 59, 48, 0.1);
+  color: #FF3B30;
+  border-color: #FF3B30;
+  font-weight: 600;
+}
+
+/* 期数行标签（10期/20期/30期）样式 */
+.zodiac-row {
+  display: grid;
+  grid-template-columns: 48px repeat(6, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.zodiac-row-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #98989F;
+  text-align: right;
+  padding-right: 8px;
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .period-title {
+    color: #F2F2F7;
+  }
+  
+  .period-time {
+    color: #98989F;
+  }
+  
+  .zodiac-tag {
+    background: rgba(120, 120, 128, 0.16);
+    color: #F2F2F7;
+  }
+  
+  .zodiac-tag:active {
+    background: rgba(120, 120, 128, 0.24);
+  }
+  
+  .zodiac-tag.active {
+    background: rgba(255, 59, 48, 0.2);
+    color: #FF3B30;
+  }
+  
+  .zodiac-row-label {
+    color: #98989F;
+  }
+}
+
+/* 期数开奖核对结果适配新UI */
+.zodiac-period-result {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.zodiac-period-actual {
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.zodiac-period-hit {
+  color: #52c41a;
+  background: rgba(82, 196, 26, 0.1);
+}
+
+.zodiac-period-miss {
+  color: #f5222d;
+  background: rgba(245, 34, 45, 0.1);
+}
+
+/* 命中生肖高亮适配新UI */
+.zodiac-tag.highlight-hit {
+  background: rgba(82, 196, 26, 0.2);
+  border-color: #52c41a;
+  color: #52c41a;
+  font-weight: 600;
+  box-shadow: 0 0 0 1px rgba(82, 196, 26, 0.3);
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .zodiac-period-hit {
+    color: #52c41a;
+    background: rgba(82, 196, 26, 0.2);
+  }
+  
+  .zodiac-period-miss {
+    color: #f5222d;
+    background: rgba(245, 34, 45, 0.2);
+  }
+  
+  .zodiac-tag.highlight-hit {
+    background: rgba(82, 196, 26, 0.3);
+    border-color: #52c41a;
+    color: #52c41a;
+    font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(82, 196, 26, 0.4);
+  }
+}
+
+/* 折叠容器适配新UI */
+.period-collapse-container {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.period-collapse-header {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+}
+
+.period-collapse-header-content {
+  flex: 1;
+  margin-right: 12px;
+}
+
+.period-collapse-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  margin: -8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #98989F;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.period-collapse-toggle:hover,
+.period-collapse-toggle:focus {
+  background: rgba(0, 0, 0, 0.05);
+  color: #1C1C1E;
+}
+
+.period-collapse-icon {
+  transition: transform 0.3s ease;
+  transform: rotate(0deg);
+}
+
+.period-collapse-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.period-collapse-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  opacity: 0;
+}
+
+.period-collapse-content:not(.collapsed) {
+  max-height: 2000px;
+  opacity: 1;
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .period-collapse-toggle {
+    color: #98989F;
+  }
+  
+  .period-collapse-toggle:hover,
+  .period-collapse-toggle:focus {
+    background: rgba(255, 255, 255, 0.1);
+    color: #F2F2F7;
+  }
+}
+
+/* 小屏幕设备适配 */
+@media (max-width: 480px) {
+  .period-card {
+    padding: 16px;
+    margin: 8px 12px;
+    border-radius: 14px;
+  }
+  
+  .period-header {
+    margin-bottom: 16px;
+  }
+  
+  .period-title {
+    font-size: 16px;
+  }
+  
+  .period-time {
+    font-size: 13px;
+  }
+  
+  .zodiac-grid {
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  
+  .zodiac-tag {
+    height: 40px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+  
+  .zodiac-row {
+    grid-template-columns: 40px repeat(6, 1fr) auto;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  
+  .zodiac-row-label {
+    font-size: 14px;
+  }
+  
+  .zodiac-period-actual {
+    padding: 3px 8px;
+    font-size: 10px;
+    border-radius: 8px;
+  }
+}
+
+/* ====================== 记录页面新增样式 ====================== */ 
+ 
+ /* 我的收藏卡片 */ 
+ .favorite-list { 
+   display: flex; 
+   flex-direction: column; 
+   gap: 16px; 
+ } 
+ .favorite-card { 
+   background: var(--card); 
+   border-radius: 20px; 
+   padding: 16px; 
+   box-shadow: var(--shadow-sm); 
+   border: 1px solid var(--border); 
+ } 
+ .fav-header { 
+   display: flex; 
+   justify-content: space-between; 
+   margin-bottom: 12px; 
+ } 
+ .fav-name { 
+   font-weight: 600; 
+   font-size: 16px; 
+ } 
+ .fav-numbers { 
+   display: flex; 
+   flex-wrap: wrap; 
+   gap: 8px; 
+   margin-bottom: 16px; 
+ } 
+ .num-ball-mini { 
+   width: 48px; 
+   height: 48px; 
+   border-radius: 24px; 
+   display: flex; 
+   flex-direction: column; 
+   align-items: center; 
+   justify-content: center; 
+   font-size: 14px; 
+   font-weight: 600; 
+   color: white; 
+   position: relative; 
+ } 
+ .num-ball-mini .num-zodiac { 
+   font-size: 10px; 
+   margin-top: 2px; 
+   opacity: 0.9; 
+ } 
+ .fav-actions { 
+   display: flex; 
+   gap: 12px; 
+   justify-content: flex-end; 
+ } 
+ .fav-btn { 
+   background: none; 
+   border: none; 
+   font-size: 13px; 
+   color: var(--primary); 
+   cursor: pointer; 
+   padding: 4px 8px; 
+ } 
+ .fav-remove { 
+   color: var(--danger); 
+ } 
+ 
+ /* 预测统计卡片 */ 
+ .prediction-stats { 
+   background: var(--bg-secondary); 
+   border-radius: 20px; 
+   padding: 16px; 
+ } 
+ .stats-summary { 
+   display: grid; 
+   grid-template-columns: repeat(4, 1fr); 
+   gap: 12px; 
+   text-align: center; 
+   margin-bottom: 20px; 
+   padding-bottom: 16px; 
+   border-bottom: 1px solid var(--border); 
+ } 
+ .stat-item { 
+   display: flex; 
+   flex-direction: column; 
+ } 
+ .stat-label { 
+   font-size: 12px; 
+   color: var(--sub-text); 
+ } 
+ .stat-value { 
+   font-size: 20px; 
+   font-weight: 700; 
+   color: var(--primary); 
+ } 
+ .stats-categories { 
+   display: flex; 
+   gap: 16px; 
+   flex-wrap: wrap; 
+ } 
+ .cat-card { 
+   flex: 1; 
+   background: var(--card); 
+   border-radius: 16px; 
+   padding: 12px; 
+   text-align: center; 
+ } 
+ .cat-title { 
+   font-weight: 600; 
+   margin-bottom: 8px; 
+ } 
+ .cat-detail { 
+   font-size: 13px; 
+   color: var(--sub-text); 
+   margin-bottom: 6px; 
+ } 
+ .cat-rate { 
+   font-size: 15px; 
+   font-weight: 600; 
+   color: var(--success); 
+ } 
+ 
+ /* 精选生肖卡片 */ 
+ .selected-zodiac-item-card { 
+   background: var(--bg-secondary); 
+   border-radius: 20px; 
+   padding: 16px; 
+ } 
+ .selected-header { 
+   display: flex; 
+   justify-content: space-between; 
+   align-items: center; 
+   margin-bottom: 12px; 
+ } 
+ .selected-issue { 
+   font-weight: 600; 
+   font-size: 15px; 
+ } 
+ .selected-date { 
+   font-size: 12px; 
+   color: var(--sub-text); 
+ } 
+ .selected-zodiacs-list { 
+   display: flex; 
+   flex-wrap: wrap; 
+   gap: 8px; 
+ } 
+ .zodiac-tag.small { 
+   font-size: 14px; 
+   padding: 4px 12px; 
+ } 
+ 
+ /* 生肖预测历史列表 */ 
+ .prediction-history-list { 
+   display: flex; 
+   flex-direction: column; 
+   gap: 12px; 
+ } 
+ .prediction-history-item { 
+  background: var(--bg-secondary); 
+  border-radius: 16px; 
+  padding: 12px; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: flex-start; 
+  gap: 12px; 
+} 
+ .history-checkbox { 
+   flex-shrink: 0; 
+ } 
+ .history-content { 
+   flex: 1; 
+ } 
+ .history-header { 
+   display: flex; 
+   justify-content: space-between;
+   align-items: center;
+   gap: 8px; 
+   margin-bottom: 8px; 
+   font-size: 13px; 
+ } 
+ .history-issue { 
+   font-weight: 600; 
+ } 
+ .history-period { 
+   color: var(--primary); 
+ } 
+ .history-date { 
+   color: var(--sub-text); 
+ } 
+ .history-zodiacs { 
+   display: flex; 
+   flex-wrap: wrap; 
+   gap: 6px; 
+ } 
+ .section-header { 
+   display: flex; 
+   justify-content: space-between; 
+   align-items: center; 
+   margin-bottom: 12px; 
+ } 
+ .section-header h2 { 
+   font-size: 18px; 
+   font-weight: 600; 
+ } 
+ .history-actions { 
+   display: flex; 
+   gap: 8px; 
+ }
+
+/* ====================== recordPage v1.0.11 增补样式 ====================== */
+.record-section {
+  margin: 0 0 16px;
+  padding: 0 12px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.empty-tip {
+  color: var(--sub-text);
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 18px 14px;
+  text-align: center;
+}
+
+.empty-inline-tip {
+  font-size: 12px;
+  color: var(--sub-text);
+}
+
+.favorite-card {
+  border: 1px solid var(--border);
+}
+
+.fav-numbers {
+  min-height: 48px;
+  align-items: center;
+}
+
+.fav-btn {
+  border-radius: 8px;
+}
+
+.prediction-stats {
+  border: 1px solid var(--border);
+}
+
+.stat-value {
+  color: var(--text);
+}
+
+.cat-card {
+  border: 1px solid var(--border);
+}
+
+.cat-rate {
+  color: var(--primary);
+}
+
+.selected-zodiac-item-card {
+  border: 1px solid var(--border);
+}
+
+.selected-zodiacs-list .zodiac-tag,
+.history-zodiacs .zodiac-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+/* 生肖预测历史中的排名标签 */
+.history-tags .history-tag {
+  position: relative;
+  font-weight: 500;
+}
+
+/* 移除序号显示，保持与精选生肖历史标签一致 */
+.history-tags .history-tag::before {
+  display: none;
+}
+
+.prediction-history-item {
+  border: 1px solid var(--border);
+}
+
+.history-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+
+@media (max-width: 768px) {
+  .record-section {
+    padding: 0 10px;
+  }
+
+  .section-header {
+    align-items: flex-start;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .stats-summary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .fav-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .empty-tip {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .selected-zodiacs-list .zodiac-tag,
+  .history-zodiacs .zodiac-tag {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+}
+

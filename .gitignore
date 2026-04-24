@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# Backup files
+*.backup
+*.bak
+
+# Node
+node_modules/
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local

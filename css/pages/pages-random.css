@@ -1,0 +1,147 @@
+/* 机选页面专属样式 */
+/* 机选页面样式 */
+.num-input-group{
+  display:flex;
+  gap:10px;
+  margin:10px 0;
+  align-items:center;
+}
+
+.num-input-group input{
+  flex:1;
+  padding:12px 16px;
+  border-radius:var(--radius);
+  border:none;
+  background:var(--bg-secondary);
+  width:60px;
+  outline:none;
+  color:var(--text);
+  font-size:15px;
+}
+
+.quick-btns{
+  display:flex;
+  gap:8px;
+  margin:10px 0;
+  flex-wrap:wrap;
+}
+
+.quick-btn{
+  flex:1;
+  padding:10px;
+  border-radius:var(--radius);
+  border:none;
+  background:var(--bg-secondary);
+  cursor:pointer;
+  transition:all var(--anim-fast);
+  color:var(--text);
+  font-size:14px;
+}
+
+/* .quick-btn:active{
+  background:var(--primary);
+  color:#FFFFFF;
+} */
+
+/* .quick-btn:hover{
+  background:var(--bg-secondary);
+} */
+
+.lottery-nums{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  padding:12px 0;
+  justify-content:center;
+}
+
+.lottery-zodiac{
+  font-size:12px;
+  color:var(--sub-text);
+  margin-top:8px;
+}
+
+.history-item{
+  padding:16px;
+  border-bottom:1px solid var(--border);
+}
+
+.history-item:last-child{
+  border-bottom:none;
+}
+
+.history-nums{
+  font-weight:600;
+  display: inline-block;
+}
+
+.history-time{
+  font-size:12px;
+  color:var(--sub-text);
+}
+
+/* 历史记录标题行 */
+.history-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.history-btns{
+  display:flex;
+  gap:6px;
+}
+
+/* 小屏适配 */
+@media (max-width: 375px) {
+  .btn-mini{padding:0;font-size:11px;min-width:44px;height:28px}
+  .tag{padding:7px 10px;font-size:13px}
+  
+  /* 筛选面板小屏适配 */
+  #predictionFiltersPanel .filter-panel-row,
+  #specialFiltersPanel .filter-panel-row{
+    gap:6px;
+  }
+  
+  #predictionFiltersPanel .filter-panel-row > div,
+  #specialFiltersPanel .filter-panel-row > div{
+    gap:3px;
+  }
+  
+  #predictionFiltersPanel .btn-mini,
+  #specialFiltersPanel .btn-mini{
+    min-width:44px;
+    height:28px;
+    font-size:10px;
+  }
+  
+  /* 机选历史记录小屏适配 */
+  .history-item{
+    padding:12px;
+    gap:8px;
+  }
+  
+  .history-item .lottery-nums{
+    gap:4px;
+    justify-content:flex-start;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  
+  .history-item .lottery-nums::-webkit-scrollbar{
+    display:none;
+  }
+  
+  .history-item .num-ball{
+    width:22px;
+    height:22px;
+    font-size:10px;
+  }
+  
+  .history-item .tag-zodiac{
+    font-size:7px;
+  }
+}
+

@@ -1,0 +1,149 @@
+/* 主题变量与深色变量定义 */
+/* 全局CSS变量（主题配置，一键修改样式） */
+:root{
+  /* 浅色主题 - 色彩系统 */
+  /* 主色 */
+  --primary:#007AFF;          /* 主色 */
+  --primary-light:#4DA3FF;     /* 主色浅 */
+  --primary-dark:#0056CC;      /* 主色深 */
+  
+  /* 辅助色 */
+  --secondary:#5856D6;         /* 辅助色 */
+  --success:#34C759;           /* 成功色 */
+  --warning:#FF9500;           /* 警告色 */
+  --danger:#FF3B30;            /* 危险色 */
+  --info:#5AC8FA;              /* 信息色 */
+  --blue:#007AFF;              /* 蓝色 */
+  --green:#34C759;             /* 绿色 */
+  
+  /* 中性色 */
+  --text:#000000;              /* 主文字 */
+  --text-secondary:#3C3C43;    /* 次要文字 */
+  --text-tertiary:#8E8E93;     /* 辅助文字 */
+  --text-disabled:#C7C7CC;     /* 禁用文字 */
+  
+  /* 背景色 */
+  --bg:#F2F2F7;                /* 主背景 */
+  --bg-secondary:#F8F8F8;      /* 次要背景 */
+  --bg-tertiary:#E5E5EA;       /* 辅助背景 */
+  --bg-disabled:#F2F2F7;       /* 禁用背景 */
+  
+  /* 卡片和边框 */
+  --card:#FFFFFF;               /* 卡片背景 */
+  --border:rgba(0,0,0,0.08);   /* 边框色 */
+  --border-light:rgba(0,0,0,0.05); /* 浅边框 */
+  --border-dark:rgba(0,0,0,0.12);  /* 深边框 */
+  
+  /* 其他 */
+  --overlay:rgba(0,0,0,0.75);   /* 遮罩色 */
+  
+  /* 通用样式变量 */
+  --shadow-sm:0 2px 8px rgba(0,0,0,0.06);
+  --shadow:0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg:0 8px 24px rgba(0,0,0,0.12);
+  --radius-sm:8px;
+  --radius:12px;
+  --radius-lg:16px;
+  --ball-size:28px;
+  /* 安全区变量 */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* 动画时长变量 */
+  --anim-fast:0.2s;
+  --anim-normal:0.3s;
+  --anim-slow:0.5s;
+  /* 布局常量 */
+  --top-card-height:180px;
+  --top-offset:230px;
+  --preview-max-count:8;
+  /* 间距变量 */
+  --spacing-xs:4px;
+  --spacing-sm:8px;
+  --spacing-md:12px;
+  --spacing-lg:16px;
+  --spacing-xl:20px;
+  --spacing-xxl:24px;
+  /* 字体大小变量 */
+  --font-size-xs:12px;
+  --font-size-sm:13px;
+  --font-size-md:14px;
+  --font-size-lg:16px;
+  --font-size-xl:18px;
+  --font-size-2xl:20px;
+  --font-size-3xl:24px;
+  /* 导航栏高度 */
+  --nav-height:80px;
+  /* iOS原生风格变量 */ 
+  --ios-corner-radius: 16px; /* iOS 17+ 更圆润的边角 */ 
+  --ios-shadow-xs: 0 1px 2px rgba(0,0,0,0.05); 
+  --ios-shadow-sm: 0 2px 4px rgba(0,0,0,0.08); 
+  --ios-shadow-md: 0 4px 10px rgba(0,0,0,0.1); 
+  --ios-shadow-lg: 0 8px 20px rgba(0,0,0,0.12); 
+  
+  /* iOS原生色彩适配 */ 
+  --ios-blue: #007AFF;       /* iOS系统蓝 */ 
+  --ios-blue-rgb: 0, 122, 255; /* iOS系统蓝RGB值 */ 
+  --ios-red: #FF3B30;        /* iOS系统红 */ 
+  --ios-green: #34C759;      /* iOS系统绿 */ 
+  --ios-yellow: #FFCC00;     /* iOS系统黄 */ 
+  --ios-gray-50: #F9F9F9;    /* iOS浅灰 */ 
+  --ios-gray-100: #F2F2F7;   /* iOS默认背景灰 */ 
+  --ios-gray-200: #E5E5EA;   /* iOS分割线灰 */ 
+  --ios-gray-300: #D1D1D6;   /* iOS次要文本灰 */ 
+  --ios-gray-400: #98989F;   /* iOS辅助文本灰 */ 
+  --ios-gray-500: #636366;   /* iOS禁用文本灰 */ 
+  --ios-gray-600: #3C3C43;   /* iOS深色文本灰 */ 
+  --ios-gray-700: #1C1C1E;   /* iOS深色背景灰 */ 
+  
+  /* iOS交互变量 */ 
+  --ios-highlight-opacity: 0.1; /* 点击高亮透明度 */ 
+  --ios-transition: 0.2s cubic-bezier(0.35, 0, 0.25, 1); /* iOS原生动画曲线 */ 
+}
+
+/* 深色模式自动适配 */
+@media (prefers-color-scheme: dark) {
+  :root{
+    /* 深色主题 - 色彩系统 */
+    /* 主色 */
+    --primary:#0A84FF;          /* 主色 */
+    --primary-light:#5AC8FA;     /* 主色浅 */
+    --primary-dark:#0066CC;      /* 主色深 */
+    
+    /* 辅助色 */
+    --secondary:#5E5CE6;         /* 辅助色 */
+    --success:#30D158;           /* 成功色 */
+    --warning:#FF9F0A;           /* 警告色 */
+    --danger:hsl(3, 100%, 61%);            /* 危险色 */
+    --info:#64D2FF;              /* 信息色 */
+    
+    /* 中性色 */
+    --text:#FFFFFF;              /* 主文字 */
+    --text-secondary:#D1D1D6;    /* 次要文字 */
+    --text-tertiary:#98989F;     /* 辅助文字 */
+    --text-disabled:#636366;     /* 禁用文字 */
+    
+    /* 背景色 */
+    --bg:#000000;                /* 主背景 */
+    --bg-secondary:#2C2C2E;      /* 次要背景 */
+    --bg-tertiary:#3A3A3C;       /* 辅助背景 */
+    --bg-disabled:#1C1C1E;       /* 禁用背景 */
+    
+    /* 卡片和边框 */
+    --card:#1C1C1E;               /* 卡片背景 */
+    --border:rgba(255,255,255,0.1);   /* 边框色 */
+    --border-light:rgba(255,255,255,0.05); /* 浅边框 */
+    --border-dark:rgba(255,255,255,0.15);  /* 深边框 */
+    
+    /* 其他 */
+    --overlay:rgba(0,0,0,0.85);   /* 遮罩色 */
+    /* iOS原生风格变量 - 深色模式适配 */ 
+    --ios-gray-50: #1C1C1E;
+    --ios-gray-100: #000000;
+    --ios-gray-200: #3A3A3C;
+    --ios-gray-300: #98989F;
+    --ios-gray-400: #D1D1D6;
+    --ios-gray-500: #E5E5EA;
+    --ios-gray-600: #F2F2F7;
+    --ios-gray-700: #F9F9F9;
+  }
+}

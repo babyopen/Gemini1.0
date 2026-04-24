@@ -1,0 +1,227 @@
+/* 全局禁用悬停与按钮交互反馈 */
+/* ====================== 禁用所有悬停效果 ====================== */
+*:hover,
+*::before:hover,
+*::after:hover,
+*:hover::before,
+*:hover::after {
+  background: inherit !important;
+  background-color: inherit !important;
+  background-image: none !important;
+  color: inherit !important;
+  border-color: inherit !important;
+  border-style: inherit !important;
+  border-width: inherit !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transform: none !important;
+  translate: none !important;
+  scale: none !important;
+  rotate: none !important;
+  opacity: inherit !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  cursor: default !important;
+  outline: none !important;
+  outline-color: inherit !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  transition: none !important;
+  animation: none !important;
+  -webkit-transition: none !important;
+  -webkit-animation: none !important;
+  -moz-transition: none !important;
+  -moz-animation: none !important;
+  -ms-transition: none !important;
+  -ms-animation: none !important;
+  -o-transition: none !important;
+  -o-animation: none !important;
+}
+
+*:hover,
+*:hover::before,
+*:hover::after,
+*:active,
+*:focus,
+*:focus-visible,
+*:focus-within {
+  transition: none !important;
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -ms-transition: none !important;
+  -o-transition: none !important;
+}
+
+/* ====================== 专门针对按钮元素禁用所有悬停和交互效果 ====================== */
+button:hover,
+button::before:hover,
+button::after:hover,
+button:hover::before,
+button:hover::after,
+.btn-mini:hover,
+.btn-mini::before:hover,
+.btn-mini::after:hover,
+.btn-mini:hover::before,
+.btn-mini:hover::after,
+.btn-line:hover,
+.btn-line::before:hover,
+.btn-line::after:hover,
+.btn-line:hover::before,
+.btn-line:hover::after,
+.action-btn:hover,
+.action-btn::before:hover,
+.action-btn::after:hover,
+.action-btn:hover::before,
+.action-btn:hover::after,
+.toggle-btn:hover,
+.toggle-btn::before:hover,
+.toggle-btn::after:hover,
+.toggle-btn:hover::before,
+.toggle-btn:hover::after,
+.mode-btn:hover,
+.mode-btn::before:hover,
+.mode-btn::after:hover,
+.mode-btn:hover::before,
+.mode-btn:hover::after,
+.quick-btn:hover,
+.quick-btn::before:hover,
+.quick-btn::after:hover,
+.quick-btn:hover::before,
+.quick-btn:hover::after,
+.modal-btn:hover,
+.modal-btn::before:hover,
+.modal-btn::after:hover,
+.modal-btn:hover::before,
+.modal-btn:hover::after,
+.modal-close-btn:hover,
+.modal-close-btn::before:hover,
+.modal-close-btn::after:hover,
+.modal-close-btn:hover::before,
+.modal-close-btn:hover::after,
+.load-more:hover,
+.load-more::before:hover,
+.load-more::after:hover,
+.load-more:hover::before,
+.load-more:hover::after,
+.close-btn:hover,
+.close-btn::before:hover,
+.close-btn::after:hover,
+.close-btn:hover::before,
+.close-btn:hover::after,
+.pagination button:hover,
+.pagination button::before:hover,
+.pagination button::after:hover,
+.pagination button:hover::before,
+.pagination button:hover::after,
+.analysis-filter-btn:hover,
+.analysis-filter-btn::before:hover,
+.analysis-filter-btn::after:hover,
+.analysis-filter-btn:hover::before,
+.analysis-filter-btn:hover::after,
+.analysis-tab-btn:hover,
+.analysis-tab-btn::before:hover,
+.analysis-tab-btn::after:hover,
+.analysis-tab-btn:hover::before,
+.analysis-tab-btn:hover::after {
+  background: inherit !important;
+  background-color: inherit !important;
+  background-image: none !important;
+  color: inherit !important;
+  border-color: inherit !important;
+  border-style: inherit !important;
+  border-width: inherit !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transform: none !important;
+  translate: none !important;
+  scale: none !important;
+  rotate: none !important;
+  opacity: inherit !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  cursor: default !important;
+  outline: none !important;
+  outline-color: inherit !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  transition: none !important;
+  animation: none !important;
+  -webkit-transition: none !important;
+  -webkit-animation: none !important;
+  -moz-transition: none !important;
+  -moz-animation: none !important;
+  -ms-transition: none !important;
+  -ms-animation: none !important;
+  -o-transition: none !important;
+  -o-animation: none !important;
+}
+
+/* 禁用按钮的active状态 */
+button:active,
+.btn-mini:active,
+.btn-line:active,
+.action-btn:active,
+.toggle-btn:active,
+.mode-btn:active,
+.quick-btn:active,
+.modal-btn:active,
+.modal-close-btn:active,
+.load-more:active,
+.close-btn:active,
+.pagination button:active,
+.analysis-filter-btn:active,
+.analysis-tab-btn:active {
+  opacity: inherit !important;
+  transform: none !important;
+  background: inherit !important;
+  color: inherit !important;
+}
+
+/* 禁用按钮的所有过渡效果 */
+button,
+button::before,
+button::after,
+.btn-mini,
+.btn-mini::before,
+.btn-mini::after,
+.btn-line,
+.btn-line::before,
+.btn-line::after,
+.action-btn,
+.action-btn::before,
+.action-btn::after,
+.toggle-btn,
+.toggle-btn::before,
+.toggle-btn::after,
+.mode-btn,
+.mode-btn::before,
+.mode-btn::after,
+.quick-btn,
+.quick-btn::before,
+.quick-btn::after,
+.modal-btn,
+.modal-btn::before,
+.modal-btn::after,
+.modal-close-btn,
+.modal-close-btn::before,
+.modal-close-btn::after,
+.load-more,
+.load-more::before,
+.load-more::after,
+.close-btn,
+.close-btn::before,
+.close-btn::after,
+.pagination button,
+.pagination button::before,
+.pagination button::after,
+.analysis-filter-btn,
+.analysis-filter-btn::before,
+.analysis-filter-btn::after,
+.analysis-tab-btn, .analysis-tab-btn::before, .analysis-tab-btn::after {
+  transition: none !important;
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -ms-transition: none !important;
+  -o-transition: none !important;
+}
+

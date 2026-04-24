@@ -1,0 +1,179 @@
+/**
+ * 连续线性评分方案（全排名线性映射 + 均衡型形态分 + 间隔分）
+ * @param {Object} data - calcZodiacAnalysis 返回的数据对象
+ * @returns {Object} { scores: {生肖: 总分}, details: {生肖: {base, shape, interval, total, rank, status}} }
+ */
+calcContinuousScores: (data) => {
+    if (!data || !data.list || data.list.length === 0) {
+        return { scores: {}, details: {} };
+    }
+
+    const zodiacOrder = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+    const list = data.list;
+    const lastItem = list[0];
+    const lastSpecial = lastItem ? Business.getSpecial(lastItem) : null;
+    const lastZodiac = lastSpecial ? lastSpecial.zod : '';
+    const lastTail = lastSpecial ? lastSpecial.tail : -1;
+
+    // ---------- 1. 计算每个生肖的遗漏期数 ----------
+    const zodiacMiss = {};
+    zodiacOrder.forEach(z => { zodiacMiss[z] = list.length; });
+    list.forEach((item, idx) => {
+        const s = Business.getSpecial(item);
+        if (zodiacMiss[s.zod] === list.length) {
+            zodiacMiss[s.zod] = idx;
+        }
+    });
+
+    // ---------- 2. 按遗漏期数排序，线性映射基础分（第1名35分 → 第12名0分）----------
+    const sortedByMiss = zodiacOrder.slice().sort((a, b) => zodiacMiss[a] - zodiacMiss[b]);
+    const totalZodiacs = zodiacOrder.length; // 12
+    const baseScores = {};
+    sortedByMiss.forEach((zod, idx) => {
+        const score = 35 * (totalZodiacs - 1 - idx) / (totalZodiacs - 1);
+        baseScores[zod] = Math.round(score);
+    });
+
+    // ---------- 3. 间隔分（原有逻辑）----------
+    const intervalStats = {};
+    for (let i = 0; i < 12; i++) intervalStats[i] = 0;
+    const recentList = list.slice(0, Math.min(30, list.length));
+    for (let i = 1; i < recentList.length; i++) {
+        const preZod = Business.getSpecial(recentList[i-1]).zod;
+        const curZod = Business.getSpecial(recentList[i]).zod;
+        const preIdx = zodiacOrder.indexOf(preZod);
+        const curIdx = zodiacOrder.indexOf(curZod);
+        if (preIdx !== -1 && curIdx !== -1) {
+            let diff = curIdx - preIdx;
+            if (diff > 6) diff -= 12;
+            if (diff < -6) diff += 12;
+            intervalStats[diff + 6]++;
+        }
+    }
+    const commonIntervals = Object.entries(intervalStats)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(x => parseInt(x[0]) - 6);
+    const intervalScores = {};
+    if (lastZodiac) {
+        const lastIdx = zodiacOrder.indexOf(lastZodiac);
+        zodiacOrder.forEach(z => {
+            const curIdx = zodiacOrder.indexOf(z);
+            let diff = curIdx - lastIdx;
+            if (diff > 6) diff -= 12;
+            if (diff < -6) diff += 12;
+            intervalScores[z] = commonIntervals.includes(diff) ? 20 : 0;
+        });
+    } else {
+        zodiacOrder.forEach(z => { intervalScores[z] = 0; });
+    }
+
+    // ---------- 4. 形态分（均衡型：5+3+4+3=15）----------
+    // 4.1 计算最近10期的热门单双和大小
+    const recent10 = list.slice(0, Math.min(10, list.length));
+    let oddCount = 0, evenCount = 0, bigCount = 0, smallCount = 0;
+    recent10.forEach(item => {
+        const s = Business.getSpecial(item);
+        if (s.odd) oddCount++; else evenCount++;
+        if (s.big) bigCount++; else smallCount++;
+    });
+    const hotOddEven = oddCount > evenCount ? '单' : '双';
+    const hotBigSmall = bigCount > smallCount ? '大' : '小';
+
+    // 4.2 每个生肖对应的单双、大小（取多数属性）
+    const zodiacOddEven = {}, zodiacBigSmall = {};
+    zodiacOrder.forEach(z => {
+        const nums = Business.getZodiacNumbers(z);
+        let oddCnt = 0, bigCnt = 0;
+        nums.forEach(num => {
+            if (num % 2 === 1) oddCnt++;
+            if (num >= 25) bigCnt++;
+        });
+        zodiacOddEven[z] = oddCnt > nums.length/2 ? '单' : '双';
+        zodiacBigSmall[z] = bigCnt > nums.length/2 ? '大' : '小';
+    });
+
+    // 4.3 上期尾数→生肖映射
+    const tailToZodiacMap = {
+        0: ['鼠','猪'], 1: ['牛','狗'], 2: ['虎','鸡'], 3: ['兔','猴'],
+        4: ['龙','羊'], 5: ['蛇','马'], 6: ['马','蛇'], 7: ['羊','龙'],
+        8: ['猴','兔'], 9: ['鸡','虎']
+    };
+
+    // 4.4 连出/遗漏：最近5期出现≥2次 或 遗漏≥15期
+    const recent5 = list.slice(0, 5);
+    const recent5Count = {};
+    zodiacOrder.forEach(z => { recent5Count[z] = 0; });
+    recent5.forEach(item => {
+        const s = Business.getSpecial(item);
+        recent5Count[s.zod]++;
+    });
+
+    // 4.5 五行相生
+    const elementGenerate = {
+        '金': ['水'], '水': ['木'], '木': ['火'], '火': ['土'], '土': ['金']
+    };
+    const zodiacElement = {
+        '鼠': '水', '牛': '土', '虎': '木', '兔': '木', '龙': '土', '蛇': '火',
+        '马': '火', '羊': '土', '猴': '金', '鸡': '金', '狗': '土', '猪': '水'
+    };
+
+    // 4.6 计算形态分
+    const shapeScores = {};
+    zodiacOrder.forEach(z => {
+        let score = 0;
+
+        // 热门形态共振（5分）
+        if (zodiacOddEven[z] === hotOddEven && zodiacBigSmall[z] === hotBigSmall) {
+            score += 5;
+        }
+        // 上期尾数关联（3分）
+        if (lastTail !== -1 && tailToZodiacMap[lastTail] && tailToZodiacMap[lastTail].includes(z)) {
+            score += 3;
+        }
+        // 连出/遗漏形态（4分）
+        const miss = zodiacMiss[z];
+        const isStreak = recent5Count[z] >= 2;
+        const isHighMiss = miss >= 15;
+        if (isStreak || isHighMiss) {
+            score += 4;
+        }
+        // 五行相生（3分）
+        if (lastZodiac && zodiacElement[lastZodiac] && zodiacElement[z]) {
+            const lastEl = zodiacElement[lastZodiac];
+            const curEl = zodiacElement[z];
+            if (elementGenerate[lastEl] && elementGenerate[lastEl].includes(curEl)) {
+                score += 3;
+            }
+        }
+
+        shapeScores[z] = Math.min(score, 15);
+    });
+
+    // ---------- 5. 合并总分及详情 ----------
+    const scores = {};
+    const details = {};
+    zodiacOrder.forEach(z => {
+        const base = baseScores[z];
+        const shape = shapeScores[z];
+        const interval = intervalScores[z];
+        const total = base + shape + interval;
+        scores[z] = total;
+        
+        let status = '';
+        if (base >= 26) status = '热';
+        else if (base >= 10) status = '温';
+        else status = '冷';
+
+        details[z] = {
+            base: base,
+            shape: shape,
+            interval: interval,
+            total: total,
+            rank: sortedByMiss.indexOf(z) + 1,
+            status: status
+        };
+    });
+
+    return { scores, details };
+},

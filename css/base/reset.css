@@ -1,0 +1,285 @@
+/* 全局重置、基础排版与加载遮罩 */
+/* iOS原生字体栈 + 全局重置 */ 
+ *{ 
+   box-sizing:border-box; 
+   margin:0; 
+   padding:0; 
+   /* iOS原生字体优先级 */ 
+   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif; 
+   -webkit-tap-highlight-color: rgba(0,0,0,0); /* 移除点击高亮 */ 
+   -webkit-font-smoothing: antialiased; /* iOS字体抗锯齿 */ 
+   -moz-osx-font-smoothing: grayscale; 
+ } 
+ 
+ html{ 
+   scroll-behavior: smooth; 
+   font-size: 16px; /* iOS基准字号 */ 
+ } 
+ 
+ body{ 
+   background: var(--ios-gray-100); 
+   color: var(--ios-gray-600); 
+   padding-top: env(safe-area-inset-top, 0px); 
+   padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px)); 
+   -webkit-user-select: none; 
+   user-select: none; 
+   -webkit-touch-callout: none; 
+   min-height: 100vh; 
+   line-height: 1.47059; /* iOS原生行高 */ 
+   font-weight: 400; 
+   font-size: var(--font-size-md); 
+ }
+
+
+/* iOS风格卡片 - 毛玻璃+原生阴影 */ 
+ .ios-card { 
+   background: rgba(255, 255, 255, 0.8); 
+   backdrop-filter: blur(20px); 
+   -webkit-backdrop-filter: blur(20px); 
+   border-radius: var(--ios-corner-radius); 
+   box-shadow: var(--ios-shadow-sm); 
+   border: 1px solid rgba(0, 0, 0, 0.05); 
+   overflow: hidden; 
+   transition: var(--ios-transition); 
+ } 
+ 
+ /* 深色模式iOS卡片 */ 
+ @media (prefers-color-scheme: dark) { 
+   .ios-card { 
+     background: rgba(30, 30, 30, 0.8); 
+     border: 1px solid rgba(255, 255, 255, 0.1); 
+   } 
+ } 
+ 
+ /* iOS卡片头部 - 原生样式 */ 
+ .ios-card-header { 
+   padding: 16px 20px; 
+   border-bottom: 1px solid var(--ios-gray-200); 
+   display: flex; 
+   justify-content: space-between; 
+   align-items: center; 
+ } 
+ 
+ .ios-card-body { 
+   padding: 20px; 
+ } 
+ 
+ /* iOS卡片交互 - 点击反馈（仿原生） */ 
+ .ios-card:active { 
+   box-shadow: var(--ios-shadow-xs); 
+   transform: translateY(0.5px); 
+ } 
+
+/* iOS原生按钮 - 系统样式 */ 
+ .ios-btn { 
+   display: inline-flex; 
+   align-items: center; 
+   justify-content: center; 
+   min-height: 44px; /* iOS最小可点击区域 */ 
+   padding: 0 16px; 
+   border-radius: var(--ios-corner-radius); 
+   font-size: 17px; /* iOS原生按钮字号 */ 
+   font-weight: 600; 
+   cursor: pointer; 
+   transition: var(--ios-transition); 
+   border: none; 
+   outline: none; 
+   touch-action: manipulation; 
+   -webkit-user-select: none; 
+   user-select: none; 
+ } 
+ 
+ /* iOS主要按钮（蓝色） */ 
+ .ios-btn-primary { 
+   background: var(--ios-blue); 
+   color: #FFFFFF; 
+ } 
+ 
+ /* iOS次要按钮（浅灰） */ 
+ .ios-btn-secondary { 
+   background: var(--ios-gray-200); 
+   color: var(--ios-blue); 
+ } 
+ 
+ /* iOS禁用按钮 */ 
+ .ios-btn:disabled { 
+   opacity: 0.5; 
+   cursor: not-allowed; 
+   transform: none !important; 
+ } 
+ 
+ /* iOS按钮点击反馈（仿原生按压） */ 
+ .ios-btn:active:not(:disabled) { 
+   background-color: rgba(var(--ios-blue-rgb), 0.9); 
+   transform: scale(0.98); 
+ } 
+ 
+ .ios-btn-secondary:active:not(:disabled) { 
+   background-color: var(--ios-gray-300); 
+ } 
+ 
+ /* iOS迷你按钮（适配小控件） */ 
+ .ios-btn-mini { 
+   min-height: 32px; 
+   padding: 0 12px; 
+   font-size: 14px; 
+   border-radius: 12px; 
+ } 
+
+/* iOS风格输入框 */ 
+ .ios-input { 
+   width: 100%; 
+   height: 44px; 
+   padding: 0 16px; 
+   background: var(--ios-gray-50); 
+   border: 1px solid var(--ios-gray-200); 
+   border-radius: var(--ios-corner-radius); 
+   font-size: 17px; 
+   color: var(--ios-gray-600); 
+   outline: none; 
+   transition: var(--ios-transition); 
+ } 
+ 
+ .ios-input:focus { 
+   border-color: var(--ios-blue); 
+   background-color: #FFFFFF; 
+ } 
+ 
+ @media (prefers-color-scheme: dark) { 
+   .ios-input:focus { 
+     background-color: var(--ios-gray-700); 
+   } 
+ } 
+ 
+ /* iOS风格开关（UISwitch） */ 
+ .ios-switch { 
+   position: relative; 
+   width: 51px; 
+   height: 31px; 
+   appearance: none; 
+   -webkit-appearance: none; 
+   background: var(--ios-gray-300); 
+   border-radius: 15.5px; 
+   transition: var(--ios-transition); 
+   cursor: pointer; 
+ } 
+ 
+ .ios-switch:checked { 
+   background: var(--ios-blue); 
+ } 
+ 
+ .ios-switch::after { 
+   content: ""; 
+   position: absolute; 
+   top: 1px; 
+   left: 1px; 
+   width: 29px; 
+   height: 29px; 
+   background: #FFFFFF; 
+   border-radius: 50%; 
+   box-shadow: var(--ios-shadow-xs); 
+   transition: var(--ios-transition); 
+ } 
+ 
+ .ios-switch:checked::after { 
+   left: 21px; 
+ }
+
+/* 统一动画过渡效果 */
+.btn, .btn-mini, .btn-line, .tag, .card, .nav-tab, .quick-nav-btn, .back-top-btn, .analysis-item, .filter-save-item, .record-item {
+  transition: all var(--anim-fast);
+}
+
+/* 通用交互反馈 */
+.btn:active, .btn-mini:active, .btn-line:active, .tag:active, .nav-tab:active, .quick-nav-btn:active, .back-top-btn:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+/* 通用悬停效果（保持兼容性） */
+/* 注意：悬停效果已在前面的任务中移除 */
+
+/* 字体层级规范 */
+h1, .text-3xl {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+  margin-bottom: var(--spacing-lg);
+}
+
+h2, .text-2xl {
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+  margin-bottom: var(--spacing-md);
+}
+
+h3, .text-xl {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  margin-bottom: var(--spacing-sm);
+}
+
+h4, .text-lg {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text);
+  margin-bottom: var(--spacing-xs);
+}
+
+p, .text-md {
+  font-size: var(--font-size-md);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text);
+  margin-bottom: var(--spacing-md);
+}
+
+.text-sm {
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.text-xs {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+  margin-bottom: var(--spacing-xs);
+}
+
+/* 加载遮罩 */
+.loading-mask{
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  background:var(--bg);
+  z-index:1001;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  transition:opacity var(--anim-normal);
+}
+.loading-mask.hide{opacity:0;pointer-events:none}
+.loading-spinner{
+  width:40px;height:40px;
+  border:3px solid var(--bg-secondary);
+  border-top-color:var(--primary);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
+}
+.loading-text{font-size:14px;color:var(--sub-text)}
+

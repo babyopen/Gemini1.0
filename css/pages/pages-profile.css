@@ -1,0 +1,1246 @@
+/* 我的页面、统计与收藏相关样式 */
+/* 我的页面菜单项 */
+.profile-menu-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  transition:background var(--anim-fast);
+  font-size:15px;
+}
+.profile-menu-item:last-child{border-bottom:none}
+/* .profile-menu-item:hover{background:var(--bg-secondary)} */
+/* .profile-menu-item:active{background:var(--bg-secondary)} */
+
+/* 筛选保存项样式 */
+.filter-save-item {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+}
+
+.filter-save-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.filter-save-item-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.filter-save-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-save-item-content {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.filter-save-item-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--sub-text);
+}
+
+/* 预测统计样式 */
+.prediction-statistics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.statistic-item {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.statistic-label {
+  font-size: 13px;
+  color: var(--sub-text);
+  margin-bottom: 8px;
+}
+
+.statistic-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* 历史记录项样式 */
+.prediction-history-item,
+.special-history-item,
+.selected-zodiac-history-item,
+.ml-prediction-history-item,
+.hot-numbers-history-item {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  transition: all var(--anim-fast);
+}
+
+/* .prediction-history-item:hover,
+.special-history-item:hover,
+.selected-zodiac-history-item:hover,
+.ml-prediction-history-item:hover,
+.hot-numbers-history-item:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
+} */
+
+.prediction-history-header,
+.special-history-header,
+.selected-zodiac-history-header,
+.ml-prediction-history-header,
+.hot-numbers-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.prediction-history-time,
+.special-history-time,
+.selected-zodiac-history-time,
+.ml-prediction-history-time,
+.hot-numbers-history-time {
+  font-size: 13px;
+  color: var(--sub-text);
+}
+
+.prediction-history-actions,
+.special-history-actions,
+.selected-zodiac-history-actions,
+.ml-prediction-history-actions,
+.hot-numbers-history-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  font-size: 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: all var(--anim-fast);
+}
+
+/* .action-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+} */
+
+/* .action-btn.danger:hover {
+  background: #ff3b30;
+  border-color: #ff3b30;
+} */
+
+/* 特码号码样式 */
+.special-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.special-number {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* 生肖标签样式 */
+.zodiac-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.zodiac-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-size: 13px;
+  border: 1px solid var(--border);
+}
+
+/* 精选生肖新布局样式 */
+.selected-zodiac-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.selected-zodiac-issue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.selected-zodiac-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.zodiac-result {
+  font-size: 13px;
+  color: var(--sub-text);
+  white-space: nowrap;
+}
+
+/* 隐藏精选生肖历史项的时间戳 */
+.selected-zodiac-history-item .selected-zodiac-history-header {
+  display: none !important;
+}
+
+/* 隐藏精选生肖历史项的时间戳元素 */
+.selected-zodiac-history-time {
+  display: none !important;
+}
+
+/* 隐藏内容区域的默认margin，因为现在按钮已经在同一行了 */
+.selected-zodiac-history-item .selected-zodiac-history-content {
+  padding-top: 0;
+}
+
+.selected-zodiac-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 预测号码样式 */
+.prediction-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.prediction-number {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid var(--border);
+}
+
+/* 热门号码样式 */
+.hot-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hot-number {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+  text-align: center;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.hot-number.rank-1 {
+  background: #ff3b30;
+}
+
+.hot-number.rank-2 {
+  background: #ff9500;
+}
+
+.hot-number.rank-3 {
+  background: #ffcc00;
+}
+
+.hot-number.rank-4 {
+  background: #34c759;
+}
+
+.hot-number.rank-5 {
+  background: #5ac8fa;
+}
+
+/* 备注样式 */
+.special-note,
+.zodiac-note {
+  font-size: 13px;
+  color: var(--sub-text);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+/* 信息样式 */
+.prediction-history-top,
+.ml-prediction-info,
+.hot-numbers-info {
+  font-size: 13px;
+  color: var(--sub-text);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 展开按钮样式 */
+.toggle-btn {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: all var(--anim-fast);
+  font-size: 13px;
+}
+
+/* .toggle-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+} */
+
+/* 分页样式 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.pagination button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: all var(--anim-fast);
+  font-size: 13px;
+}
+
+/* .pagination button:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+} */
+
+.pagination button.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+  .prediction-statistics {
+    grid-template-columns: 1fr;
+  }
+  
+  .filter-save-item-info,
+  .prediction-history-top,
+  .ml-prediction-info,
+  .hot-numbers-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .special-numbers,
+  .zodiac-tags,
+  .prediction-numbers,
+  .hot-numbers {
+    justify-content: center;
+  }
+}
+
+/* 加载更多 */
+.load-more {
+  text-align: center;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 10px;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: all var(--anim-fast);
+}
+
+/* .load-more:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+} */
+
+/* .load-more:active {
+  opacity: 0.7;
+  transform: translateY(0);
+} */
+
+/* 统计详情弹窗 */
+.stat-detail-modal,
+.streak-detail-modal,
+.zodiac-detail-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.stat-detail-content,
+.streak-detail-content,
+.zodiac-detail-content {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  animation: modalSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.stat-detail-header,
+.streak-detail-header,
+.zodiac-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border);
+}
+
+.stat-detail-header h3,
+.streak-detail-header h3,
+.zodiac-detail-header h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.close-btn {
+  background: var(--bg-secondary);
+  border: none;
+  font-size: var(--font-size-xl);
+  color: var(--sub-text);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--anim-fast);
+  line-height: 1;
+}
+
+/* .close-btn:hover {
+  background: var(--danger);
+  color: #fff;
+  transform: scale(1.1);
+} */
+
+/* .close-btn:active {
+  transform: scale(0.9);
+} */
+
+.stat-detail-item,
+.zodiac-detail-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.stat-detail-item:last-child,
+.zodiac-detail-item:last-child {
+  border-bottom: none;
+}
+
+.stat-detail-item .label,
+.zodiac-detail-item .label {
+  color: var(--sub-text);
+  font-size: var(--font-size-md);
+}
+
+.stat-detail-item .value,
+.zodiac-detail-item .value {
+  color: var(--text);
+  font-weight: 600;
+  font-size: var(--font-size-md);
+}
+
+.streak-detail-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--font-size-md);
+}
+
+.streak-detail-item:last-child {
+  border-bottom: none;
+}
+
+.streak-detail-item .expect {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.streak-detail-item .te {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.streak-detail-item .shape {
+  color: var(--sub-text);
+}
+
+/* ====================== 生肖详情弹窗V2 - 现代化设计 ====================== */
+.zodiac-detail-modal-content {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  max-width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  transform: scale(0.9);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 头部区域 */
+.zodiac-detail-header-v2 {
+  padding: 24px;
+  background: linear-gradient(135deg, var(--primary) 0%, #0051d5 100%);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.zodiac-badge {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.header-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+.issue-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.refresh-btn-v2,
+.close-btn-v2 {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.refresh-btn-v2 {
+  width: auto;
+  padding: 0 16px;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.refresh-btn-v2 svg,
+.close-btn-v2 svg {
+  transition: transform 0.3s ease;
+}
+
+.refresh-btn-v2:hover:not(:disabled),
+.close-btn-v2:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.refresh-btn-v2:active:not(:disabled),
+.close-btn-v2:active {
+  transform: translateY(0);
+}
+
+.refresh-btn-v2.loading svg {
+  animation: spin 1s linear infinite;
+}
+
+.refresh-btn-v2:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 主体内容区 */
+.zodiac-detail-body-v2 {
+  padding: 24px;
+}
+
+/* 核心指标卡片 */
+.core-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.metric-card.primary {
+  background: linear-gradient(135deg, var(--primary) 0%, #0051d5 100%);
+  color: white;
+  border: none;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: var(--sub-text);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.metric-card.primary .metric-label {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.metric-unit {
+  font-size: 12px;
+  color: var(--sub-text);
+  font-weight: 500;
+}
+
+.metric-card.primary .metric-unit {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 详情区块 */
+.detail-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+}
+
+.title-icon {
+  font-size: 18px;
+}
+
+/* 评分维度卡片 */
+.score-dimensions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.dimension-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.dimension-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.dimension-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.dimension-icon.base {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+}
+
+.dimension-icon.shape {
+  background: linear-gradient(135deg, #ffa502 0%, #ff7f50 100%);
+}
+
+.dimension-icon.interval {
+  background: linear-gradient(135deg, #1e90ff 0%, #00bfff 100%);
+}
+
+.dimension-icon.trend {
+  background: linear-gradient(135deg, #2ed573 0%, #7bed9f 100%);
+}
+
+.dimension-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dimension-label {
+  font-size: 13px;
+  color: var(--sub-text);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.dimension-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.dimension-unit {
+  font-size: 12px;
+  color: var(--sub-text);
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+.dimension-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.dimension-status.hot {
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
+}
+
+.dimension-status.warm {
+  background: rgba(255, 149, 0, 0.1);
+  color: #ff9500;
+}
+
+.dimension-status.cold {
+  background: rgba(52, 199, 89, 0.1);
+  color: #34c759;
+}
+
+.dimension-desc {
+  font-size: 11px;
+  color: var(--sub-text);
+  margin-top: 2px;
+}
+
+/* 号码分布区域 - 单行显示 */
+.zodiac-numbers-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.zodiac-numbers-single-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  padding: 16px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.zodiac-ball-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.zodiac-ball-wrapper:hover {
+  transform: scale(1.15);
+}
+
+.zodiac-number {
+  width: 48px;
+  height: 48px;
+  line-height: 48px;
+  text-align: center;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.zodiac-number::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), transparent);
+  border-radius: 50% 50% 0 0;
+}
+
+.zodiac-number.red {
+  background: radial-gradient(circle at 30% 30%, #ff6b6b, #ff3b30);
+}
+
+.zodiac-number.blue {
+  background: radial-gradient(circle at 30% 30%, #5ac8fa, #007aff);
+}
+
+.zodiac-number.green {
+  background: radial-gradient(circle at 30% 30%, #7bed9f, #34c759);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .core-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .score-dimensions {
+    grid-template-columns: 1fr;
+  }
+  
+  .zodiac-number {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .zodiac-detail-header-v2 {
+    padding: 20px;
+  }
+  
+  .zodiac-badge {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+  }
+  
+  .header-info h3 {
+    font-size: 18px;
+  }
+  
+  .zodiac-detail-body-v2 {
+    padding: 20px;
+  }
+  
+  .metric-value {
+    font-size: 24px;
+  }
+  
+  .dimension-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+  
+  .dimension-value {
+    font-size: 18px;
+  }
+  
+  .zodiac-number {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    font-size: 14px;
+  }
+  
+  .zodiac-numbers-single-row {
+    gap: 8px;
+    padding: 12px;
+  }
+}
+
+/* ====================== 黑暗模式适配 ====================== */
+@media (prefers-color-scheme: dark) {
+  .zodiac-detail-modal-content {
+    background: linear-gradient(135deg, #1c1c1e 0%, #2c2c2e 100%);
+  }
+  
+  .zodiac-detail-header-v2 {
+    background: linear-gradient(135deg, #0a84ff 0%, #0051d5 100%);
+  }
+  
+  .zodiac-badge {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  
+  .issue-tag {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .refresh-btn-v2,
+  .close-btn-v2 {
+    background: rgba(255, 255, 255, 0.15);
+  }
+  
+  .refresh-btn-v2:hover:not(:disabled),
+  .close-btn-v2:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  
+  .metric-card {
+    background: #2c2c2e;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .metric-label {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .metric-value {
+    color: #ffffff;
+  }
+  
+  .metric-unit {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .section-title {
+    color: #ffffff;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .dimension-card {
+    background: #2c2c2e;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .dimension-label {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .dimension-value {
+    color: #ffffff;
+  }
+  
+  .dimension-unit {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .dimension-desc {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  
+  .zodiac-numbers-single-row {
+    background: #2c2c2e;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .zodiac-number {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ====================== 弹窗详情优化样式 ====================== */
+.modal-detail-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  justify-content: center;
+}
+
+.modal-detail-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 0.75rem;
+  min-width: 4.375rem;
+  min-height: 4.375rem;
+  transition: all var(--anim-fast);
+}
+
+.modal-detail-card.hit {
+  background: var(--bg-secondary);
+  border: 2px solid var(--success);
+}
+
+.modal-detail-card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.modal-detail-ball-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.modal-detail-ball-info {
+  font-size: 0.6875rem;
+  color: var(--sub-text);
+  text-align: center;
+  font-weight: 500;
+}
+
+.modal-detail-section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.modal-detail-section-title {
+  font-size: 0.875rem;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.modal-detail-result-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 0.75rem;
+}
+
+.modal-detail-result-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.modal-detail-result-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.modal-detail-result-info {
+  font-size: 0.75rem;
+  color: var(--sub-text);
+}
+
+.modal-detail-result-status {
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.modal-detail-period-tags {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.modal-detail-period-tag {
+  padding: 0.0625rem 0.25rem;
+  border-radius: 0.375rem;
+  font-size: 0.5rem;
+  background: rgba(0,0,0,0.15);
+  color: var(--text-secondary);
+  font-weight: 600;
+  min-width: 0.875rem;
+  text-align: center;
+}
+
+.modal-detail-result-ball {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.modal-detail-status-success {
+  color: var(--success) !important;
+}
+
+.modal-detail-status-danger {
+  color: var(--danger) !important;
+}
+
+/* ====================== 收藏页面标题样式 ====================== */
+.favorite-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.favorite-primary-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.favorite-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
