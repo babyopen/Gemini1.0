@@ -296,8 +296,8 @@ export const dataFetch = {
    */
   _checkAndUpdateRecords: (sortedData) => {
     if (sortedData.length > 0) {
-      // 检查最近10期的开奖数据，确保早期记录也能被核对
-      const recentItems = sortedData.slice(0, 10);
+      // ✅ 检查最近20期的开奖数据，确保早期记录也能被核对（第一时间更新）
+      const recentItems = sortedData.slice(0, 20);
       
       import('../../record.js').then(({ record }) => {
         recentItems.forEach(item => {

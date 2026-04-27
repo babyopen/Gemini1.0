@@ -1475,24 +1475,29 @@ input[type="checkbox"]{
   display: flex;
   justify-content: space-between;
   margin-bottom: 12px;
+  flex-wrap: nowrap;
+  gap: 4px;
 }
 
 .summary-card-item {
   text-align: center;
   flex: 1;
+  min-width: 0;
+  padding: 0 2px;
 }
 
 .summary-card-value {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text);
   line-height: 1.2;
 }
 
 .summary-card-label {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--sub-text);
-  margin-top: 4px;
+  margin-top: 2px;
+  white-space: nowrap;
 }
 
 .summary-card-latest {
@@ -1501,11 +1506,39 @@ input[type="checkbox"]{
   border-radius: 8px;
   text-align: center;
   margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .summary-card-latest-content {
   font-size: 12px;
   color: var(--sub-text);
+}
+
+.summary-card-latest-zodiacs {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.summary-card-latest-zodiacs .zodiac-tag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  background: rgba(120, 120, 128, 0.08);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1C1C1E;
+  padding: 0 12px;
+  border: 1px solid transparent;
 }
 
 .summary-card-footer {
@@ -1534,11 +1567,33 @@ input[type="checkbox"]{
     padding: 12px;
   }
   
+  .summary-card-row {
+    gap: 2px;
+  }
+
   .summary-card-value {
-    font-size: 18px;
+    font-size: 16px;
+  }
+
+  .summary-card-label {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 320px) {
+  .summary-card-row {
+    gap: 1px;
   }
   
+  .summary-card-item {
+    padding: 0 1px;
+  }
+
+  .summary-card-value {
+    font-size: 14px;
+  }
+
   .summary-card-label {
-    font-size: 10px;
+    font-size: 8px;
   }
 }

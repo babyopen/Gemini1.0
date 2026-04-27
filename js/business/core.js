@@ -858,10 +858,16 @@ export const core = {
       bottomNav.classList.toggle('needs-space', index === 0 || index === 1);
     }
     
-    // 切换到记录页面时，重新渲染所有数据
+    // 切换到记录页面时，重新渲染所有数据并自动获取最新数据
     if (index === 2) {
       import('./record.js').then(({ record }) => {
+        // ✅ 先快速渲染本地数据
         record.renderAll();
+        
+        // ✅ 然后在后台自动获取最新数据并核对（第一时间更新）
+        record.autoFetchAndCheck().catch(error => {
+          console.error('自动刷新记录页面失败:', error);
+        });
       }).catch(error => {
         console.error('加载record模块失败:', error);
       });

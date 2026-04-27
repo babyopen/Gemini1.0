@@ -36,6 +36,41 @@ export const Router = {
       name: '我的',
       icon: 'profile',
       requireTopBox: false
+    },
+    selectedZodiacDetail: {
+      id: 'selectedZodiacDetailPage',
+      name: '精选生肖历史',
+      icon: 'record',
+      requireTopBox: false,
+      backPage: 'record'
+    },
+    mlPredictionDetail: {
+      id: 'mlPredictionDetailPage',
+      name: 'ML预测历史',
+      icon: 'record',
+      requireTopBox: false,
+      backPage: 'record'
+    },
+    zodiacPredictionDetail: {
+      id: 'zodiacPredictionDetailPage',
+      name: '生肖预测历史',
+      icon: 'record',
+      requireTopBox: false,
+      backPage: 'record'
+    },
+    hotNumbersDetail: {
+      id: 'hotNumbersDetailPage',
+      name: '特码热门历史',
+      icon: 'record',
+      requireTopBox: false,
+      backPage: 'record'
+    },
+    specialDetail: {
+      id: 'specialDetailPage',
+      name: '精选特码历史',
+      icon: 'record',
+      requireTopBox: false,
+      backPage: 'record'
     }
   },
 
@@ -226,24 +261,44 @@ export const Router = {
     try {
       switch (pageKey) {
         case 'record':
-          // 初始化记录页面
           if (window.Business && window.Business.record && window.Business.record.init) {
             window.Business.record.init();
           }
           break;
         case 'analysis':
-          // 初始化分析页面
           if (window.Business && window.Business.initAnalysisPage) {
             window.Business.initAnalysisPage();
           }
           break;
         case 'profile':
-          // 初始化个人页面
-          // 可在此添加个人页面初始化逻辑
+          break;
+        case 'selectedZodiacDetail':
+          if (window.Business && window.Business.record && window.Business.record.initSelectedZodiacDetail) {
+            window.Business.record.initSelectedZodiacDetail();
+          }
+          break;
+        case 'mlPredictionDetail':
+          if (window.Business && window.Business.record && window.Business.record.initMLPredictionDetail) {
+            window.Business.record.initMLPredictionDetail();
+          }
+          break;
+        case 'zodiacPredictionDetail':
+          if (window.Business && window.Business.record && window.Business.record.initZodiacPredictionDetail) {
+            window.Business.record.initZodiacPredictionDetail();
+          }
+          break;
+        case 'hotNumbersDetail':
+          if (window.Business && window.Business.record && window.Business.record.initHotNumbersDetail) {
+            window.Business.record.initHotNumbersDetail();
+          }
+          break;
+        case 'specialDetail':
+          if (window.Business && window.Business.record && window.Business.record.initSpecialDetail) {
+            window.Business.record.initSpecialDetail();
+          }
           break;
         case 'filter':
         default:
-          // 筛选页面无需特殊初始化
           break;
       }
     } catch (error) {

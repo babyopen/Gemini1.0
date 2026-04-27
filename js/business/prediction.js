@@ -616,13 +616,6 @@ export const prediction = {
         dataCache.lastUpdated = now;
         return data;
       };
-      
-      // 转义特殊字符
-      const escapeHtml = (text) => {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-      };
 
       // 渲染弹窗内容（使用requestAnimationFrame优化）
       const renderContent = (content, zodiac) => {
@@ -660,54 +653,54 @@ export const prediction = {
             
             periodsHtml += `
               <div style="margin-bottom:16px;">
-                <div style="font-size:14px;font-weight:600;margin-bottom:10px;color:var(--text);">${escapeHtml(periodLabels[period])}分析</div>
+                <div style="font-size:14px;font-weight:600;margin-bottom:10px;color:var(--text);">${Utils.escapeHtml(periodLabels[period])}分析</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                   <div style="display:flex;flex-direction:column;gap:8px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                       <span style="font-size:13px;color:var(--sub-text);">排名</span>
-                      <span style="font-size:13px;font-weight:600;color:var(--text);">${escapeHtml(rank)}</span>
+                      <span style="font-size:13px;font-weight:600;color:var(--text);">${Utils.escapeHtml(rank)}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                       <span style="font-size:13px;color:var(--sub-text);">出现次数</span>
-                      <span style="font-size:13px;color:var(--text);">${escapeHtml(count.toString())}次</span>
+                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(count.toString())}次</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                       <span style="font-size:13px;color:var(--sub-text);">遗漏次数</span>
-                      <span style="font-size:13px;color:var(--text);">${escapeHtml(miss.toString())}期</span>
+                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(miss.toString())}期</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                       <span style="font-size:13px;color:var(--sub-text);">平均遗漏</span>
-                      <span style="font-size:13px;color:var(--text);">${escapeHtml(typeof avgMiss === 'number' ? avgMiss.toFixed(1) : '0')}期</span>
+                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(typeof avgMiss === 'number' ? avgMiss.toFixed(1) : '0')}期</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                       <span style="font-size:13px;color:var(--sub-text);">占比</span>
-                      <span style="font-size:13px;color:var(--text);">${escapeHtml(percentage)}%</span>
+                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(percentage)}%</span>
                     </div>
                   </div>
                   <div style="display:flex;flex-direction:column;gap:8px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                       <span style="font-size:13px;color:var(--sub-text);">综合评分</span>
-                      <span style="font-size:13px;font-weight:600;color:var(--primary);">${escapeHtml(score.toString())}分</span>
+                      <span style="font-size:13px;font-weight:600;color:var(--primary);">${Utils.escapeHtml(score.toString())}分</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                       <span style="font-size:13px;color:var(--sub-text);">基础热度</span>
-                      <span style="font-size:13px;color:var(--text);">${escapeHtml(detail.base ? detail.base.toString() : '0')}分</span>
+                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(detail.base ? detail.base.toString() : '0')}分</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                       <span style="font-size:13px;color:var(--sub-text);">形态共振</span>
-                      <span style="font-size:13px;color:var(--text);">${escapeHtml(detail.shape ? detail.shape.toString() : '0')}分</span>
+                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(detail.shape ? detail.shape.toString() : '0')}分</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                       <span style="font-size:13px;color:var(--sub-text);">间隔规律</span>
-                      <span style="font-size:13px;color:var(--text);">${escapeHtml(detail.interval ? detail.interval.toString() : '0')}分</span>
+                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(detail.interval ? detail.interval.toString() : '0')}分</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                       <span style="font-size:13px;color:var(--sub-text);">趋势动量</span>
-                      <span style="font-size:13px;color:var(--text);">${escapeHtml(detail.trend ? detail.trend.toString() : '0')}分</span>
+                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(detail.trend ? detail.trend.toString() : '0')}分</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                       <span style="font-size:13px;color:var(--sub-text);">近期动量</span>
-                      <span style="font-size:13px;color:var(--text);">${escapeHtml(detail.momentum ? detail.momentum.toString() : '0')}分</span>
+                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(detail.momentum ? detail.momentum.toString() : '0')}分</span>
                     </div>
                   </div>
                 </div>
@@ -727,14 +720,14 @@ export const prediction = {
           const newContent = document.createElement('div');
           newContent.innerHTML = `
             <div class="modal-header">
-              <h3 class="modal-title">${escapeHtml(zodiac)} 详细评分 (第${escapeHtml(currentIssue)}期精选)</h3>
+              <h3 class="modal-title">${Utils.escapeHtml(zodiac)} 详细评分 (第${Utils.escapeHtml(currentIssue)}期精选)</h3>
               <button class="modal-close-btn" onclick="this.closest('.modal-overlay').remove()">×</button>
             </div>
             <div class="modal-body">
               <div style="margin-bottom:20px;padding:16px;background:linear-gradient(135deg, var(--primary) 0%, #0051d5 100%);border-radius:12px;color:white;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
                   <span style="font-size:14px;font-weight:600;">综合平均评分</span>
-                  <span style="font-size:24px;font-weight:700;">${escapeHtml(averageScore)}分</span>
+                  <span style="font-size:24px;font-weight:700;">${Utils.escapeHtml(averageScore)}分</span>
                 </div>
               </div>
               ${periodsHtml}

@@ -23,7 +23,8 @@ export const Storage = {
     HISTORY_CACHE_TIME: 'historyCacheTime',
     ZODIAC_RECORDS: 'zodiacRecords',
     NUMBER_RECORDS: 'numberRecords',
-    CUSTOM_API_CONFIG: 'customApiConfig'
+    CUSTOM_API_CONFIG: 'customApiConfig',
+    SPECIAL_FILTERS: 'specialFilters'
   }),
 
   /**
@@ -848,6 +849,39 @@ export const Storage = {
       console.error('重置自定义API配置失败:', e);
       Toast.show('重置失败，请重试');
       return false;
+    }
+  },
+
+  saveSpecialFilters: (filters) => {
+    try {
+      if (!filters || typeof filters !== 'object') {
+        return false;
+      }
+      const { period, numCount } = filters;
+      const filterData = {
+        period: period || '10',
+        numCount: numCount || '5'
+      };
+      return Storage.set(Storage.KEYS.SPECIAL_FILTERS, filterData);
+    } catch (e) {
+      console.error('保存精选特码筛选条件失败:', e);
+      return false;
+    }
+  },
+
+  loadSpecialFilters: () => {
+    try {
+      const filters = Storage.get(Storage.KEYS.SPECIAL_FILTERS, null);
+      if (filters && typeof filters === 'object') {
+        return {
+          period: filters.period || '10',
+          numCount: filters.numCount || '5'
+        };
+      }
+      return { period: '10', numCount: '5' };
+    } catch (e) {
+      console.error('加载精选特码筛选条件失败:', e);
+      return { period: '10', numCount: '5' };
     }
   }
 

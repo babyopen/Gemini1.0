@@ -17,6 +17,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#007AFF">
 <link rel="icon" href="favicon.PNG" type="image/png">
@@ -319,42 +320,48 @@
         <div id="favoriteList" class="filter-save-list" role="list"></div>
       </div>
     </div>
-    <div class="card">
+    <div class="card" id="selectedZodiacHistorySection">
       <div class="card-header">
-        <h2>📊 预测统计</h2>
-        <button class="btn-mini" data-action="refreshPredictionStatistics" style="font-size:11px;">刷新</button>
+        <h2>精选生肖</h2>
       </div>
-      <div class="card-body" id="predictionStatisticsBody">
-        <div class="selected-zodiac-summary-card" onclick="record.showDetailedStatistics('zodiac')">
+      <div class="card-body">
+        <div class="selected-zodiac-summary-card" id="selectedZodiacSummaryCard" onclick="Router.navigate('selectedZodiacDetail')">
           <div class="summary-card-row">
             <div class="summary-card-item">
               <div class="summary-card-value" id="selectedZodiacTotal">0</div>
-              <div class="summary-card-label">预测次数</div>
+              <div class="summary-card-label">统计次数</div>
             </div>
             <div class="summary-card-item">
-              <div class="summary-card-value" id="selectedZodiacHit" style="color:var(--success);">0</div>
+              <div class="summary-card-value" style="color:var(--success);" id="selectedZodiacHit">0</div>
               <div class="summary-card-label">命中</div>
             </div>
             <div class="summary-card-item">
-              <div class="summary-card-value" id="selectedZodiacMiss" style="color:var(--danger);">0</div>
+              <div class="summary-card-value" style="color:var(--danger);" id="selectedZodiacMiss">0</div>
               <div class="summary-card-label">未中</div>
             </div>
             <div class="summary-card-item">
-              <div class="summary-card-value" id="selectedZodiacPending" style="color:#FF9800;">0</div>
+              <div class="summary-card-value" style="color:#FF9800;" id="selectedZodiacPending">0</div>
               <div class="summary-card-label">待开奖</div>
             </div>
           </div>
           <div class="summary-card-latest">
             <span class="summary-card-latest-content" id="selectedZodiacLatestContent">暂无数据</span>
+            <span class="summary-card-latest-zodiacs" id="selectedZodiacLatestZodiacs"></span>
           </div>
           <div class="summary-card-footer">
             <span>命中率</span>
             <span class="summary-card-rate" id="selectedZodiacRate">0.0%</span>
-            <span class="summary-card-arrow">→ 查看详情</span>
+            <span class="summary-card-arrow">→ 查看历史</span>
           </div>
         </div>
-        
-        <div class="selected-zodiac-summary-card" id="zodiacPredictionSummaryCard" onclick="record.showZodiacPredictionHistory()" style="margin-top:12px;">
+      </div>
+    </div>
+    <div class="card" id="zodiacPredictionHistorySection">
+      <div class="card-header">
+        <h2>🔮 生肖预测</h2>
+      </div>
+      <div class="card-body">
+        <div class="selected-zodiac-summary-card" id="zodiacPredictionSummaryCard" onclick="Router.navigate('zodiacPredictionDetail')">
           <div class="summary-card-row">
             <div class="summary-card-item">
               <div class="summary-card-value" id="zodiacPredictionTotal">0</div>
@@ -375,6 +382,7 @@
           </div>
           <div class="summary-card-latest">
             <span class="summary-card-latest-content" id="zodiacPredictionLatestContent">暂无数据</span>
+            <span class="summary-card-latest-zodiacs" id="zodiacPredictionLatestZodiacs"></span>
           </div>
           <div class="summary-card-footer">
             <span>命中率</span>
@@ -384,88 +392,84 @@
         </div>
       </div>
     </div>
-    <div class="card" id="selectedZodiacHistorySection">
+    <div class="card" id="mlPredictionHistorySection">
       <div class="card-header">
-        <h2>精选生肖</h2>
-        <div style="display:flex;gap:4px;align-items:center;">
-          <button class="btn-mini red" data-action="clearSelectedZodiacHistory" style="font-size:11px;">清空</button>
-        </div>
+        <h2>🤖 ML预测</h2>
       </div>
       <div class="card-body">
-        <div id="selectedZodiacHistoryList">
-          <div class="empty-tip">暂无精选生肖历史</div>
-        </div>
-        <div id="selectedZodiacHistoryToggle" style="display:none;margin-top:8px;">
-          <button class="toggle-btn" data-action="toggleSelectedZodiacCollapse" style="width:100%;">展开更多</button>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <h2>🔮 生肖预测历史</h2>
-        <div style="display:flex;gap:4px;align-items:center;">
-          <button class="btn-mini" data-action="togglePredictionFiltersPanel" style="font-size:11px;">选择</button>
-
-          <button class="btn-mini red" data-action="clearZodiacPredictionHistory" style="font-size:11px;">清空</button>
-        </div>
-      </div>
-      <div class="card-body">
-        <div id="predictionFiltersPanel" class="filter-panel">
-          <div class="filter-panel-row">
-            <div class="filter-btn-group">
-              <button class="btn-mini prediction-period-btn active" data-period="10">10期</button>
-              <button class="btn-mini prediction-period-btn" data-period="20">20期</button>
-              <button class="btn-mini prediction-period-btn" data-period="30">30期</button>
-              <button class="btn-mini prediction-period-btn" data-period="all">全年</button>
+        <div class="selected-zodiac-summary-card" id="mlPredictionSummaryCard" onclick="Router.navigate('mlPredictionDetail')">
+          <div class="summary-card-row">
+            <div class="summary-card-item">
+              <div class="summary-card-value" id="mlPredictionTotal">0</div>
+              <div class="summary-card-label">预测次数</div>
             </div>
-            <div class="filter-panel-buttons">
-              <button class="btn-mini" data-action="selectAllPredictionPeriods" style="font-size:11px;">全选</button>
-              <button class="btn-mini" data-action="resetPredictionPeriods" style="font-size:11px;">清空</button>
-              <button class="btn-mini" data-action="confirmPredictionFilters" style="background:var(--primary);color:#fff;">确认</button>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:var(--success);" id="mlPredictionHit">0</div>
+              <div class="summary-card-label">命中</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:var(--danger);" id="mlPredictionMiss">0</div>
+              <div class="summary-card-label">未中</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:#FF9800;" id="mlPredictionPending">0</div>
+              <div class="summary-card-label">待开奖</div>
             </div>
           </div>
-        </div>
-        <div id="zodiacPredictionHistoryList">
-          <div class="empty-tip">暂无预测历史</div>
-        </div>
-        <div id="zodiacPredictionHistoryToggle" style="display:none;margin-top:8px;">
-          <button class="toggle-btn" data-action="toggleZodiacPredictionHistory" style="width:100%;">展开更多</button>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <h2>🤖 ML预测历史</h2>
-        <div style="display:flex;gap:4px;align-items:center;">
-          <button class="btn-mini" data-action="refreshMLPredictionHistory" style="font-size:11px;">刷新</button>
-          <button class="btn-mini red" data-action="clearMLPredictionHistory" style="font-size:11px;">清空</button>
-        </div>
-      </div>
-      <div class="card-body">
-        <div id="mlPredictionHistoryList">
-          <div class="empty-tip">暂无ML预测历史</div>
-        </div>
-        <div id="mlPredictionHistoryToggle" style="display:none;margin-top:8px;">
-          <button class="toggle-btn" data-action="toggleMLPredictionHistory" style="width:100%;">展开更多</button>
+          <div class="summary-card-latest">
+            <span class="summary-card-latest-content" id="mlPredictionLatestContent">暂无数据</span>
+            <span class="summary-card-latest-zodiacs" id="mlPredictionLatestZodiacs"></span>
+          </div>
+          <div class="summary-card-footer">
+            <span>命中率</span>
+            <span class="summary-card-rate" id="mlPredictionRate">0.0%</span>
+            <span class="summary-card-arrow">→ 查看历史</span>
+          </div>
         </div>
       </div>
     </div>
-    <div class="card">
+    <div class="card" id="specialHistorySection">
       <div class="card-header">
-        <h2>精选特码历史</h2>
+        <h2>🎯 精选特码</h2>
         <div style="display:flex;gap:4px;align-items:center;">
-          <!-- 模式筛选按钮组 -->
-          <div class="mode-switch-btns" style="display:flex;gap:4px;margin-right:8px;">
+          <div class="mode-switch-btns" style="display:flex;gap:4px;">
             <button class="btn-mini mode-btn special-history-mode-btn active" data-mode="all" data-action="switchSpecialHistoryMode" title="全部">全</button>
             <button class="btn-mini mode-btn special-history-mode-btn" data-mode="hot" data-action="switchSpecialHistoryMode" title="🔥 热号模式">🔥</button>
             <button class="btn-mini mode-btn special-history-mode-btn" data-mode="cold" data-action="switchSpecialHistoryMode" title="❄️ 冷号反弹">❄️</button>
           </div>
-          <button class="btn-mini" data-action="toggleSpecialFiltersPanel" style="font-size:11px;">选择</button>
-          <button class="btn-mini red" data-action="clearSpecialHistory" aria-label="清空精选特码历史" style="font-size:11px;">清空</button>
         </div>
       </div>
       <div class="card-body">
-        <div id="specialFiltersPanel" class="filter-panel">
+        <div class="selected-zodiac-summary-card" id="specialSummaryCard" onclick="Router.navigate('specialDetail')">
+          <div class="summary-card-row">
+            <div class="summary-card-item">
+              <div class="summary-card-value" id="specialTotal">0</div>
+              <div class="summary-card-label">预测次数</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:var(--success);" id="specialHit">0</div>
+              <div class="summary-card-label">命中</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:var(--danger);" id="specialMiss">0</div>
+              <div class="summary-card-label">未中</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:#FF9800;" id="specialPending">0</div>
+              <div class="summary-card-label">待开奖</div>
+            </div>
+          </div>
+          <div class="summary-card-latest">
+            <span class="summary-card-latest-content" id="specialLatestContent">暂无数据</span>
+            <span class="summary-card-latest-zodiacs" id="specialLatestZodiacs"></span>
+          </div>
+          <div class="summary-card-footer">
+            <span>命中率</span>
+            <span class="summary-card-rate" id="specialRate">0.0%</span>
+            <span class="summary-card-arrow">→ 查看历史</span>
+          </div>
+        </div>
+        <div id="specialFiltersPanel" class="filter-panel" style="margin-top:12px;">
           <div class="filter-panel-row">
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <div class="filter-btn-group">
@@ -486,30 +490,42 @@
             </div>
           </div>
         </div>
-        <div id="specialHistoryList">
-          <div class="empty-tip">暂无精选特码历史</div>
-        </div>
-        <div id="specialHistoryToggle" style="display:none;margin-top:8px;">
-          <button class="toggle-btn" data-action="toggleSpecialCollapse" style="width:100%;">展开更多</button>
-        </div>
-        <div id="specialHistoryPagination" class="pagination"></div>
       </div>
     </div>
-    <div class="card">
+    <div class="card" id="hotNumbersHistorySection">
       <div class="card-header">
-        <h2>特码热门TOP5历史</h2>
-        <div style="display:flex;gap:4px;align-items:center;">
-          <button class="btn-mini red" data-action="clearHotNumbersHistory" style="font-size:11px;">清空</button>
-        </div>
+        <h2>🔥 特码热门</h2>
       </div>
       <div class="card-body">
-        <div id="hotNumbersHistoryList">
-          <div class="empty-tip">暂无特码热门TOP5历史</div>
+        <div class="selected-zodiac-summary-card" id="hotNumbersSummaryCard" onclick="Router.navigate('hotNumbersDetail')">
+          <div class="summary-card-row">
+            <div class="summary-card-item">
+              <div class="summary-card-value" id="hotNumbersTotal">0</div>
+              <div class="summary-card-label">预测次数</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:var(--success);" id="hotNumbersHit">0</div>
+              <div class="summary-card-label">命中</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:var(--danger);" id="hotNumbersMiss">0</div>
+              <div class="summary-card-label">未中</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:#FF9800;" id="hotNumbersPending">0</div>
+              <div class="summary-card-label">待开奖</div>
+            </div>
+          </div>
+          <div class="summary-card-latest">
+            <span class="summary-card-latest-content" id="hotNumbersLatestContent">暂无数据</span>
+            <span class="summary-card-latest-zodiacs" id="hotNumbersLatestZodiacs"></span>
+          </div>
+          <div class="summary-card-footer">
+            <span>命中率</span>
+            <span class="summary-card-rate" id="hotNumbersRate">0.0%</span>
+            <span class="summary-card-arrow">→ 查看历史</span>
+          </div>
         </div>
-        <div id="hotNumbersHistoryToggle" style="display:none;margin-top:8px;">
-          <button class="toggle-btn" data-action="toggleHotNumbersCollapse" style="width:100%;">展开更多</button>
-        </div>
-        <div id="hotNumbersHistoryPagination" class="pagination"></div>
       </div>
     </div>
     <div class="disclaimer">仅供娱乐，非投注建议</div>
@@ -963,6 +979,91 @@
   <div class="bottom-nav-item" data-action="switchBottomNav" data-index="1">分析</div>
   <div class="bottom-nav-item" data-action="switchBottomNav" data-index="2">记录</div>
   <div class="bottom-nav-item" data-action="switchBottomNav" data-index="3">我的</div>
+</div>
+
+<!-- 精选生肖历史详情页 -->
+<div class="page" id="selectedZodiacDetailPage" style="display:none;">
+  <div class="detail-page-header">
+    <button class="detail-back-btn" onclick="Router.navigate('record')">← 返回</button>
+    <h2 class="detail-title">精选生肖历史</h2>
+    <button class="btn-mini red" data-action="clearSelectedZodiacHistory">清空</button>
+  </div>
+  <div class="detail-page-content">
+    <div id="selectedZodiacDetailList">
+      <div class="empty-tip">暂无历史记录</div>
+    </div>
+    <div id="selectedZodiacDetailToggle" style="display:none;margin-top:12px;">
+      <button class="toggle-btn" data-action="toggleSelectedZodiacDetailCollapse" style="width:100%;">展开更多</button>
+    </div>
+  </div>
+</div>
+
+<!-- ML预测历史详情页 -->
+<div class="page" id="mlPredictionDetailPage" style="display:none;">
+  <div class="detail-page-header">
+    <button class="detail-back-btn" onclick="Router.navigate('record')">← 返回</button>
+    <h2 class="detail-title">ML预测历史</h2>
+    <button class="btn-mini red" data-action="clearMLPredictionHistory">清空</button>
+  </div>
+  <div class="detail-page-content">
+    <div id="mlPredictionDetailList">
+      <div class="empty-tip">暂无历史记录</div>
+    </div>
+    <div id="mlPredictionDetailToggle" style="display:none;margin-top:12px;">
+      <button class="toggle-btn" data-action="toggleMLPredictionDetailCollapse" style="width:100%;">展开更多</button>
+    </div>
+  </div>
+</div>
+
+<!-- 生肖预测历史详情页 -->
+<div class="page" id="zodiacPredictionDetailPage" style="display:none;">
+  <div class="detail-page-header">
+    <button class="detail-back-btn" onclick="Router.navigate('record')">← 返回</button>
+    <h2 class="detail-title">生肖预测历史</h2>
+    <button class="btn-mini red" data-action="clearZodiacPredictionHistory">清空</button>
+  </div>
+  <div class="detail-page-content">
+    <div id="zodiacPredictionDetailList">
+      <div class="empty-tip">暂无历史记录</div>
+    </div>
+    <div id="zodiacPredictionDetailToggle" style="display:none;margin-top:12px;">
+      <button class="toggle-btn" data-action="toggleZodiacPredictionDetailCollapse" style="width:100%;">展开更多</button>
+    </div>
+  </div>
+</div>
+
+<!-- 特码热门历史详情页 -->
+<div class="page" id="hotNumbersDetailPage" style="display:none;">
+  <div class="detail-page-header">
+    <button class="detail-back-btn" onclick="Router.navigate('record')">← 返回</button>
+    <h2 class="detail-title">特码热门历史</h2>
+    <button class="btn-mini red" data-action="clearHotNumbersHistory">清空</button>
+  </div>
+  <div class="detail-page-content">
+    <div id="hotNumbersDetailList">
+      <div class="empty-tip">暂无历史记录</div>
+    </div>
+    <div id="hotNumbersDetailToggle" style="display:none;margin-top:12px;">
+      <button class="toggle-btn" data-action="toggleHotNumbersDetailCollapse" style="width:100%;">展开更多</button>
+    </div>
+  </div>
+</div>
+
+<!-- 精选特码历史详情页 -->
+<div class="page" id="specialDetailPage" style="display:none;">
+  <div class="detail-page-header">
+    <button class="detail-back-btn" onclick="Router.navigate('record')">← 返回</button>
+    <h2 class="detail-title">精选特码历史</h2>
+    <button class="btn-mini red" data-action="clearSpecialHistory">清空</button>
+  </div>
+  <div class="detail-page-content">
+    <div id="specialDetailList">
+      <div class="empty-tip">暂无历史记录</div>
+    </div>
+    <div id="specialDetailToggle" style="display:none;margin-top:12px;">
+      <button class="toggle-btn" data-action="toggleSpecialDetailCollapse" style="width:100%;">展开更多</button>
+    </div>
+  </div>
 </div>
 
 <!-- 轻提示 -->

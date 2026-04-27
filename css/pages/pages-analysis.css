@@ -68,6 +68,11 @@
   }
 }
 
+/* 旋转动画类 */
+.pull-refresh-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
 /* 下拉时的弹性效果 */
 .pull-refresh-container.pulling {
   transition: none;

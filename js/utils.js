@@ -127,127 +127,6 @@ export const Utils = {
    * 通用触摸滑动删除处理器
    */
   /**
-   * 滑动处理器基类（工厂函数）
-   * 统一处理左滑/右滑逻辑，减少代码重复
-   */
-  _createSwipeHandler: (options) => {
-    const {
-      threshold = -150,
-      directionThreshold = 30,
-      maxAngle = 45,
-      isRightSwipe = false,
-      onSwipeStart = null,
-      onSwipeMove = null,
-      onSwipeEnd = null
-    } = options;
-
-    return {
-      _startX: {},
-      _startY: {},
-      _currentX: {},
-      _currentY: {},
-      _startTime: {},
-      _isHorizontal: {},
-      _hasDirection: {},
-      _isValidSwipe: {},
-      _threshold: threshold,
-      _directionThreshold: directionThreshold,
-      _maxAngle: maxAngle,
-      _isRightSwipe: isRightSwipe,
-
-      _getKey: (idx, prefix) => `${prefix}_${idx}`,
-
-      _getSwipeAngle: (deltaX, deltaY) => {
-        return Math.atan2(Math.abs(deltaY), Math.abs(deltaX)) * 180 / Math.PI;
-      },
-
-      _cleanup: function(key) {
-        delete this._startX[key];
-        delete this._startY[key];
-        delete this._currentX[key];
-        delete this._currentY[key];
-        delete this._startTime[key];
-        delete this._isHorizontal[key];
-        delete this._hasDirection[key];
-        delete this._isValidSwipe[key];
-      },
-
-      handleTouchStart: function(e, idx, prefix) {
-        const key = this._getKey(idx, prefix);
-        const touch = e.touches[0];
-        
-        this._startX[key] = touch.clientX;
-        this._startY[key] = touch.clientY;
-        this._currentX[key] = touch.clientX;
-        this._currentY[key] = touch.clientY;
-        this._startTime[key] = Date.now();
-        this._isHorizontal[key] = false;
-        this._hasDirection[key] = false;
-        this._isValidSwipe[key] = false;
-
-        if (onSwipeStart) {
-          onSwipeStart(e, key);
-        }
-      },
-
-      handleTouchMove: function(e, idx, prefix) {
-        const key = this._getKey(idx, prefix);
-        if (this._startX[key] === undefined) return;
-        
-        const touch = e.touches[0];
-        this._currentX[key] = touch.clientX;
-        this._currentY[key] = touch.clientY;
-        
-        const deltaX = touch.clientX - this._startX[key];
-        const deltaY = touch.clientY - this._startY[key];
-        const absDeltaX = Math.abs(deltaX);
-        const absDeltaY = Math.abs(deltaY);
-        
-        // 方向判断阶段
-        if (!this._hasDirection[key]) {
-          if (absDeltaX > this._directionThreshold || absDeltaY > this._directionThreshold) {
-            this._hasDirection[key] = true;
-            const angle = this._getSwipeAngle(deltaX, deltaY);
-            const isHorizontal = absDeltaX > absDeltaY && angle <= this._maxAngle;
-            this._isHorizontal[key] = isHorizontal;
-            
-            // 判断滑动方向是否符合要求
-            if (this._isRightSwipe) {
-              this._isValidSwipe[key] = isHorizontal && deltaX > 0;
-            } else {
-              this._isValidSwipe[key] = isHorizontal && deltaX < 0;
-            }
-          }
-        }
-        
-        // 如果不是有效滑动，不处理
-        if (!this._isValidSwipe[key]) {
-          return;
-        }
-        
-        // 阻止默认行为
-        e.preventDefault();
-        
-        if (onSwipeMove) {
-          onSwipeMove(e, key, deltaX, absDeltaX);
-        }
-      },
-
-      handleTouchEnd: function(e, idx, prefix, ...args) {
-        const key = this._getKey(idx, prefix);
-        
-        if (onSwipeEnd) {
-          const deltaX = (this._currentX[key] || this._startX[key]) - this._startX[key];
-          const deltaTime = Date.now() - (this._startTime[key] || 0);
-          onSwipeEnd(e, key, deltaX, deltaTime, ...args);
-        }
-        
-        this._cleanup(key);
-      }
-    };
-  },
-
-  /**
    * 左滑删除处理器（通用版）
    * 支持所有历史记录容器的左滑删除功能
    * @namespace SwipeDeleteHandler
@@ -358,78 +237,68 @@ export const Utils = {
       const key = `${prefix}_${idx}`;
       const touch = e.touches[0];
       
-      Utils.SwipeDeleteHandler._startX[key] = touch.clientX;
-      Utils.SwipeDeleteHandler._startY[key] = touch.clientY;
-      Utils.SwipeDeleteHandler._currentX[key] = touch.clientX;
-      Utils.SwipeDeleteHandler._currentY[key] = touch.clientY;
-      Utils.SwipeDeleteHandler._startTime[key] = Date.now();
-      Utils.SwipeDeleteHandler._isHorizontal[key] = false;
-      Utils.SwipeDeleteHandler._hasDirection[key] = false;
-      Utils.SwipeDeleteHandler._isLeftSwipe[key] = false;
+      this._startX[key] = touch.clientX;
+      this._startY[key] = touch.clientY;
+      this._currentX[key] = touch.clientX;
+      this._currentY[key] = touch.clientY;
+      this._startTime[key] = Date.now();
+      this._isHorizontal[key] = false;
+      this._hasDirection[key] = false;
+      this._isLeftSwipe[key] = false;
     },
 
     handleTouchMove: function(e, idx, prefix) {
       const key = `${prefix}_${idx}`;
-      if (Utils.SwipeDeleteHandler._startX[key] === undefined) return;
+      if (this._startX[key] === undefined) return;
       
       if (!e || !e.touches || e.touches.length === 0) return;
       
       const touch = e.touches[0];
-      Utils.SwipeDeleteHandler._currentX[key] = touch.clientX;
-      Utils.SwipeDeleteHandler._currentY[key] = touch.clientY;
+      this._currentX[key] = touch.clientX;
+      this._currentY[key] = touch.clientY;
       
-      const deltaX = touch.clientX - Utils.SwipeDeleteHandler._startX[key];
-      const deltaY = touch.clientY - Utils.SwipeDeleteHandler._startY[key];
+      const deltaX = touch.clientX - this._startX[key];
+      const deltaY = touch.clientY - this._startY[key];
       const absDeltaX = Math.abs(deltaX);
       const absDeltaY = Math.abs(deltaY);
       
-      // 方向判断阶段（低延迟，20px阈值）
-      if (!Utils.SwipeDeleteHandler._hasDirection[key]) {
-        if (absDeltaX > Utils.SwipeDeleteHandler._directionThreshold || 
-            absDeltaY > Utils.SwipeDeleteHandler._directionThreshold) {
-          Utils.SwipeDeleteHandler._hasDirection[key] = true;
+      if (!this._hasDirection[key]) {
+        if (absDeltaX > this._directionThreshold || 
+            absDeltaY > this._directionThreshold) {
+          this._hasDirection[key] = true;
           
-          // 计算滑动角度
-          const angle = Utils.SwipeDeleteHandler._getSwipeAngle(deltaX, deltaY);
+          const angle = this._getSwipeAngle(deltaX, deltaY);
           
-          // 判断是否为水平滑动且角度在允许范围内
-          const isHorizontal = absDeltaX > absDeltaY && angle <= Utils.SwipeDeleteHandler._maxAngle;
-          Utils.SwipeDeleteHandler._isHorizontal[key] = isHorizontal;
-          Utils.SwipeDeleteHandler._isLeftSwipe[key] = deltaX < 0; // 向左滑动
+          const isHorizontal = absDeltaX > absDeltaY && angle <= this._maxAngle;
+          this._isHorizontal[key] = isHorizontal;
+          this._isLeftSwipe[key] = deltaX < 0;
           
-          // 如果不是向左滑动，不处理
           if (!isHorizontal || deltaX >= 0) {
             return;
           }
         }
       }
       
-      // 如果不是向左滑动，不处理
-      if (!Utils.SwipeDeleteHandler._isHorizontal[key] || 
-          !Utils.SwipeDeleteHandler._isLeftSwipe[key]) {
+      if (!this._isHorizontal[key] || 
+          !this._isLeftSwipe[key]) {
         return;
       }
       
-      // 阻止默认行为
       e.preventDefault();
       
       const item = e.currentTarget;
       if (!item) return;
       
-      // 计算滑动进度（0-1）
-      const progress = Math.min(absDeltaX / Utils.SwipeDeleteHandler._threshold, 1);
+      const progress = Math.min(absDeltaX / this._threshold, 1);
       
-      // 显示删除指示器
-      Utils.SwipeDeleteHandler._showDeleteIndicator(item, progress);
+      this._showDeleteIndicator(item, progress);
       
-      // 添加视觉反馈 - 轻微左移
-      const translateX = Math.max(deltaX * 0.5, -80); // 最大移动80px
+      const translateX = Math.max(deltaX * 0.5, -80);
       item.style.transform = `translateX(${translateX}px)`;
       item.style.transition = 'transform 0.05s ease-out';
       
-      // 达到阈值时改变指示器颜色
       const indicator = item.querySelector('.swipe-delete-indicator');
-      if (indicator && absDeltaX >= Utils.SwipeDeleteHandler._threshold) {
+      if (indicator && absDeltaX >= this._threshold) {
         indicator.style.background = 'linear-gradient(to bottom, #ff453a, #ff3b30)';
         indicator.style.boxShadow = '0 0 8px rgba(255, 59, 48, 0.6)';
       }
@@ -439,53 +308,45 @@ export const Utils = {
       const key = `${prefix}_${idx}`;
       const item = e.currentTarget;
       
-      // 恢复内容位置
       item.style.transform = 'translateX(0)';
       item.style.transition = 'transform 0.3s ease-out';
       
-      // 如果不是向左滑动，直接清理
-      if (!Utils.SwipeDeleteHandler._isHorizontal[key] || 
-          !Utils.SwipeDeleteHandler._isLeftSwipe[key]) {
-        Utils.SwipeDeleteHandler._hideDeleteIndicator(item);
-        Utils.SwipeDeleteHandler._cleanup(key);
+      if (!this._isHorizontal[key] || 
+          !this._isLeftSwipe[key]) {
+        this._hideDeleteIndicator(item);
+        this._cleanup(key);
         return;
       }
       
-      const deltaX = Utils.SwipeDeleteHandler._currentX[key] - Utils.SwipeDeleteHandler._startX[key];
-      const deltaTime = Date.now() - Utils.SwipeDeleteHandler._startTime[key];
+      const deltaX = this._currentX[key] - this._startX[key];
+      const deltaTime = Date.now() - this._startTime[key];
       
-      // 判断是否达到触发条件（距离阈值 或 快速滑动）
-      const isQuickSwipe = deltaTime < 200 && deltaX < -40; // 快速滑动（200ms内40px）
-      const isLongSwipe = deltaX <= -Utils.SwipeDeleteHandler._threshold; // 长距离滑动
+      const isQuickSwipe = deltaTime < 200 && deltaX < -40;
+      const isLongSwipe = deltaX <= -this._threshold;
       
       if (isQuickSwipe || isLongSwipe) {
-        // ✅ 添加二次确认
         if (confirm('确定要删除这条记录吗？')) {
-          // 执行删除
-          Utils.SwipeDeleteHandler._performDelete(item, deleteCallback);
+          this._performDelete(item, deleteCallback);
         } else {
-          // 用户取消删除，显示提示
           if (typeof Toast !== 'undefined') {
             Toast.show('已取消删除');
           }
         }
       }
       
-      // 隐藏指示器并清理
-      Utils.SwipeDeleteHandler._hideDeleteIndicator(item);
-      Utils.SwipeDeleteHandler._cleanup(key);
+      this._hideDeleteIndicator(item);
+      this._cleanup(key);
     },
 
-    // 清理状态
-    _cleanup: (key) => {
-      delete Utils.SwipeDeleteHandler._startX[key];
-      delete Utils.SwipeDeleteHandler._startY[key];
-      delete Utils.SwipeDeleteHandler._currentX[key];
-      delete Utils.SwipeDeleteHandler._currentY[key];
-      delete Utils.SwipeDeleteHandler._startTime[key];
-      delete Utils.SwipeDeleteHandler._isHorizontal[key];
-      delete Utils.SwipeDeleteHandler._hasDirection[key];
-      delete Utils.SwipeDeleteHandler._isLeftSwipe[key];
+    _cleanup: function(key) {
+      delete this._startX[key];
+      delete this._startY[key];
+      delete this._currentX[key];
+      delete this._currentY[key];
+      delete this._startTime[key];
+      delete this._isHorizontal[key];
+      delete this._hasDirection[key];
+      delete this._isLeftSwipe[key];
     }
   },
 

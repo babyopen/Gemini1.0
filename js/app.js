@@ -14,6 +14,7 @@ import { PerformanceMonitor } from './performance-monitor.js';
 import { ErrorHandler } from './error-handler.js';
 import { Router } from './router.js';
 import { core } from './business/core.js';
+import { record } from './business/record.js';
 import { DOM } from './dom.js';
 
 /**
@@ -82,8 +83,10 @@ async function initApp() {
   PerformanceMonitor.logMetrics();
 }
 
-// 为了兼容原 HTML 中的内联 onclick，将 Business 挂载到 window
+// 为了兼容原 HTML 中的内联 onclick，将 Business、Router 和 record 挂载到 window
 window.Business = Business;
+window.Router = Router;
+window.record = record;
 
 // 导出core模块的方法到Business对象
 Object.assign(Business, {
@@ -110,48 +113,6 @@ Object.assign(Business, {
   copyZodiacNumbers: core.copyZodiacNumbers
 });
 
-// 添加缺失的方法作为临时解决方案
-if (!Business.switchBottomNav) {
-  Business.switchBottomNav = (targetPage) => {
-    try {
-      // 页面映射：索引 -> 页面键值
-      const pageMap = {
-        0: 'filter',
-        1: 'analysis',
-        2: 'record',
-        3: 'profile'
-      };
-
-      // 处理数字索引
-      let pageKey;
-      if (typeof targetPage === 'number' || !isNaN(targetPage)) {
-        pageKey = pageMap[targetPage] || 'filter';
-      } else {
-        // 处理页面ID
-        const idToKeyMap = {
-          'filterPage': 'filter',
-          'analysisPage': 'analysis',
-          'recordPage': 'record',
-          'profilePage': 'profile'
-        };
-        pageKey = idToKeyMap[targetPage] || targetPage;
-      }
-
-      // 使用路由模块导航
-      Router.navigate(pageKey);
-
-    } catch(e) {
-      ErrorHandler.handleError({
-        error: e,
-        type: ErrorHandler.ErrorType.BUSINESS,
-        level: ErrorHandler.ErrorLevel.WARN,
-        message: '切换底部导航失败',
-        context: { function: 'switchBottomNav', targetPage }
-      });
-    }
-  };
-}
-
 // 修复事件绑定中的导航操作，让它能够正确处理 data-index 属性
 if (EventBinder && EventBinder.handleGlobalClick) {
   const originalHandleGlobalClick = EventBinder.handleGlobalClick;
@@ -168,58 +129,6 @@ if (EventBinder && EventBinder.handleGlobalClick) {
     originalHandleGlobalClick(e);
   };
 }
-
-// 页面加载完成后，路由模块会自动处理页面初始化
-// window.addEventListener('DOMContentLoaded', () => {
-//   try {
-//     // 隐藏所有页面
-//     const pages = ['filterPage', 'analysisPage', 'recordPage', 'profilePage'];
-//     pages.forEach(id => {
-//       const page = document.getElementById(id);
-//       if (page) {
-//         page.style.display = 'none';
-//       }
-//     });
-
-//     // 显示筛选页
-//     const filterPage = document.getElementById('filterPage');
-//     if (filterPage) {
-//       filterPage.style.display = 'block';
-//     }
-
-//     // 显示顶部结果展示区（因为默认显示的是筛选页）
-//     const topBox = document.getElementById('topBox');
-//     if (topBox) {
-//       topBox.style.display = 'block';
-//     }
-
-//     // 设置 body-box 的 margin-top（因为默认显示的是筛选页）
-//     const bodyBox = document.querySelector('.body-box');
-//     if (bodyBox) {
-//       bodyBox.style.marginTop = 'var(--top-offset)';
-//     }
-
-//     // 更新导航按钮状态
-//     const navButtons = document.querySelectorAll('.bottom-nav-item');
-//     navButtons.forEach(btn => {
-//       btn.classList.remove('active');
-//     });
-
-//     // 激活筛选按钮
-//     const filterBtn = document.querySelector('.bottom-nav-item[data-index="0"]');
-//     if (filterBtn) {
-//       filterBtn.classList.add('active');
-//     }
-//   } catch(e) {
-//     ErrorHandler.handleError({
-//       error: e,
-//       type: ErrorHandler.ErrorType.SYSTEM,
-//       level: ErrorHandler.ErrorLevel.WARN,
-//       message: '初始化页面失败',
-//       context: { function: 'DOMContentLoaded initialization' }
-//     });
-//   }
-// });
 
 if (!Business.toggleQuickNav) {
   Business.toggleQuickNav = (force) => {

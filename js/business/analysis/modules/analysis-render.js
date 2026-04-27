@@ -11,11 +11,6 @@ import { Utils } from '../../../utils.js';
 import { Storage } from '../../../storage.js';
 
 /**
- * 导入工具函数
- */
-import { Utils as BaseUtils } from '../../../utils.js';
-
-/**
  * 分析渲染模块
  * 负责分析页面的各种数据渲染和交互功能
  */
