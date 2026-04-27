@@ -1018,19 +1018,17 @@ export const analysisRender = {
           // 遍历所有号码数量选项
           allNumCounts.forEach(numCount => {
             try {
-              // 根据号码数量截取号码
-              const numbersStr = allNumbersStr.slice(0, numCount);
-              const hotStr = hotNumbersStr.slice(0, numCount);
-              const coldStr = coldNumbersStr.slice(0, numCount);
+              // ✅ 只保存完整的号码列表，不截取
+              // 在显示时根据 numCount 动态截取
               
               // 构建记录对象
               const recordData = {
                 issue: issue,
                 period: period,           // 期数范围：10/20/30/all
                 numCount: numCount,       // 号码数量：5/10/15/20
-                numbers: numbersStr,
-                hotNumbers: hotStr,       // 保存热号
-                coldNumbers: coldStr,     // 保存冷号
+                numbers: allNumbersStr,   // 保存完整列表
+                hotNumbers: hotNumbersStr, // 保存完整热号列表
+                coldNumbers: coldNumbersStr, // 保存完整冷号列表
                 mode: mode,               // 保存当前模式
                 type: type                // 保存类型（用于筛选）
               };

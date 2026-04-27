@@ -13,6 +13,9 @@ export const record = {
   // 滑动删除处理器引用缓存（避免重复创建）
   _swipeHandlers: new WeakMap(),
   
+  // ✅ 精选特码显示数量
+  _specialDisplayCount: 5,
+  
   init: () => {
     // 使用DOMContentLoaded确保DOM元素完全加载
     if (document.readyState === 'loading') {
@@ -135,8 +138,7 @@ export const record = {
     const refreshText = document.getElementById('recordPullRefreshText');
     
     if (!container || !indicator) {
-      console.warn('[Record] 下拉刷新容器不存在');
-      return;
+      return; // 容器不存在，静默跳过
     }
     
     let startY = 0;
@@ -350,8 +352,7 @@ export const record = {
   renderFavoriteList: () => {
     const container = document.getElementById('favoriteList');
     if (!container) {
-      console.warn('[Record] 容器不存在: favoriteList');
-      return;
+      return; // 容器不存在，静默跳过
     }
     
     // 显示加载状态
@@ -548,9 +549,16 @@ export const record = {
         latestNumbers: hotStats.latestNumbers
       });
       
+      // ✅ 获取精选特码筛选条件
+      const selectedPeriod = record._specialHistoryFilter.selectedPeriod || '10';
+      const selectedNumCount = record._specialHistoryFilter.selectedNumCount || '5';
+      
       // 计算精选特码统计
       const specialRecords = Storage.get('numberRecords', []);
-      const specialStats = record._calculateSpecialStats(specialRecords);
+      const specialStats = record._calculateSpecialStats(specialRecords, {
+        period: selectedPeriod,
+        numCount: selectedNumCount
+      });
       
       // 更新精选特码卡片
       record._updateSummaryCard('special', {
@@ -603,23 +611,86 @@ export const record = {
     return { total, hit, miss, pending, rate, latest, latestZodiacs: latestZodiacsStr };
   },
   
-  _calculateSpecialStats: (records) => {
+  _calculateSpecialStats: (records, filter = { period: '10', numCount: '5' }) => {
     let hit = 0, miss = 0, pending = 0;
     let latestIssue = null;
     let latestTime = null;
     let latestNumbers = null;
     
+    const { period, numCount } = filter;
+    const numCountNum = parseInt(numCount) || 5;
+    const isAllPeriod = period === 'all';
+    
+    // ✅ 按issue分组，获取最新一期的记录
+    const recordsByIssue = {};
     records.forEach(rec => {
-      if (rec.checked) {
-        rec.matched === true ? hit++ : miss++;
-      } else {
-        pending++;
+      if (!recordsByIssue[rec.issue] || new Date(rec.createdAt) > new Date(recordsByIssue[rec.issue].createdAt)) {
+        recordsByIssue[rec.issue] = rec;
       }
+    });
+    
+    // 获取所有issue并排序
+    const sortedIssues = Object.keys(recordsByIssue).sort().reverse();
+    
+    // ✅ 在最新一期中查找匹配的记录
+    for (const issue of sortedIssues) {
+      const rec = recordsByIssue[issue];
+      const recPeriod = String(rec.period);
+      const recNumCount = String(rec.numCount);
       
-      if (!latestIssue && rec.issue) {
+      const periodMatch = isAllPeriod || recPeriod === String(period);
+      const numMatch = recNumCount === String(numCount);
+      
+      if (periodMatch && numMatch) {
         latestIssue = rec.issue;
         latestTime = rec.createdAt;
         latestNumbers = Array.isArray(rec.numbers) ? rec.numbers : [];
+        break;
+      }
+    }
+    
+    // ✅ 如果在最新一期没有找到完全匹配，尝试只匹配期数
+    if (!latestIssue) {
+      for (const issue of sortedIssues) {
+        const rec = recordsByIssue[issue];
+        const recPeriod = String(rec.period);
+        
+        const periodMatch = isAllPeriod || recPeriod === String(period);
+        
+        if (periodMatch) {
+          latestIssue = rec.issue;
+          latestTime = rec.createdAt;
+          latestNumbers = Array.isArray(rec.numbers) ? rec.numbers : [];
+          break;
+        }
+      }
+    }
+    
+    // ✅ 如果还是没有匹配，使用任何最新记录
+    if (!latestIssue && records.length > 0) {
+      const latestRec = records.reduce((latest, rec) => 
+        !latest || new Date(rec.createdAt) > new Date(latest.createdAt) ? rec : latest
+      , null);
+      if (latestRec) {
+        latestIssue = latestRec.issue;
+        latestTime = latestRec.createdAt;
+        latestNumbers = Array.isArray(latestRec.numbers) ? latestRec.numbers : [];
+      }
+    }
+    
+    // 统计（统计所有匹配的记录）
+    records.forEach(rec => {
+      const recPeriod = String(rec.period);
+      const recNumCount = String(rec.numCount);
+      
+      // 只统计期数和数量都匹配的记录
+      const periodMatch = isAllPeriod || recPeriod === String(period);
+      if (periodMatch && recNumCount === String(numCount)) {
+        if (rec.checked) {
+          rec.matched === true ? hit++ : miss++;
+        } else {
+          pending++;
+        }
       }
     });
     
@@ -634,7 +705,8 @@ export const record = {
       latest = `第${latestIssue}期 ${dateStr}`;
     }
     
-    const latestNumbersStr = latestNumbers ? latestNumbers.map(n => {
+    // ✅ 根据numCount限制显示的号码数量
+    const latestNumbersStr = latestNumbers ? latestNumbers.slice(0, numCountNum).map(n => {
       if (typeof n === 'object' && n !== null) {
         return n.number || n.num || '';
       }
@@ -786,8 +858,7 @@ export const record = {
   renderSelectedZodiacHistory: () => {
     const container = document.getElementById('selectedZodiacHistoryList');
     if (!container) {
-      console.warn('[Record] 容器不存在: selectedZodiacHistoryList');
-      return;
+      return; // 容器不存在，静默跳过
     }
     
     // 显示加载状态
@@ -1721,8 +1792,7 @@ export const record = {
   renderSpecialHistory: () => {
     const container = document.getElementById('specialHistoryList');
     if (!container) {
-      console.warn('[Record] 容器不存在: specialHistoryList');
-      return;
+      return; // 容器不存在，静默跳过
     }
     
     // 显示加载状态
@@ -1941,8 +2011,7 @@ export const record = {
   renderHotNumbersHistory: () => {
     const container = document.getElementById('hotNumbersHistoryList');
     if (!container) {
-      console.warn('[Record] 容器不存在: hotNumbersHistoryList');
-      return;
+      return; // 容器不存在，静默跳过
     }
     
     // 显示加载状态
@@ -2108,6 +2177,47 @@ export const record = {
     const periodText = selectedPeriod === 'all' ? '全年' : selectedPeriod + '期';
     Toast.show(`已应用筛选：${periodText} ${selectedNumCount}个`);
   },
+  
+  // ✅ 切换精选特码筛选弹窗显示
+  toggleSpecialFilterPopup: () => {
+    const popup = document.getElementById('specialFilterPopup');
+    if (!popup) return;
+    
+    if (popup.style.display === 'none') {
+      popup.style.display = 'block';
+      // 动画效果
+      popup.style.opacity = '0';
+      popup.style.transform = 'translateY(-10px)';
+      requestAnimationFrame(() => {
+        popup.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+        popup.style.opacity = '1';
+        popup.style.transform = 'translateY(0)';
+      });
+    } else {
+      record.closeSpecialFilterPopup();
+    }
+  },
+  
+  // ✅ 关闭筛选弹窗
+  closeSpecialFilterPopup: () => {
+    const popup = document.getElementById('specialFilterPopup');
+    if (!popup) return;
+    
+    popup.style.opacity = '0';
+    popup.style.transform = 'translateY(-10px)';
+    setTimeout(() => {
+      popup.style.display = 'none';
+    }, 200);
+  },
+  
+  // ✅ 确认筛选
+  confirmSpecialFilter: () => {
+    record.closeSpecialFilterPopup();
+    // 重新渲染统计数据
+    record.renderPredictionStatistics();
+    Toast.show('筛选已更新');
+  },
+  
   switchSpecialHistoryMode: (mode) => {
     const buttons = document.querySelectorAll('.special-history-mode-btn');
     buttons.forEach(btn => btn.classList.remove('active'));
@@ -2118,6 +2228,42 @@ export const record = {
     
     // 显示提示
     Toast.show(`已切换到${mode === 'hot' ? '🔥 热号' : mode === 'cold' ? '❄️ 冷号' : '全部'}模式`);
+  },
+  
+  // ✅ 切换精选特码期数
+  switchSpecialHistoryPeriod: (period) => {
+    // 更新按钮状态
+    const buttons = document.querySelectorAll('.special-history-period-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`.special-history-period-btn[data-period="${period}"]`)?.classList.add('active');
+    
+    // ✅ 更新筛选状态
+    record._specialHistoryFilter.selectedPeriod = String(period);
+    
+    // ✅ 重新渲染统计数据
+    record.renderPredictionStatistics();
+    
+    // 显示提示
+    const periodText = period === 'all' ? '全部期数' : `${period}期`;
+    Toast.show(`已切换到${periodText}`);
+  },
+  
+  // ✅ 切换精选特码显示数量
+  switchSpecialHistoryCount: (count) => {
+    // 更新按钮状态
+    const buttons = document.querySelectorAll('.special-history-count-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`.special-history-count-btn[data-count="${count}"]`)?.classList.add('active');
+    
+    // ✅ 更新筛选状态
+    record._specialHistoryFilter.selectedNumCount = String(count);
+    record._specialDisplayCount = parseInt(count);
+    
+    // ✅ 重新渲染统计数据
+    record.renderPredictionStatistics();
+    
+    // 显示提示
+    Toast.show(`已切换到显示${count}个号码`);
   },
 
   // ---------- 展开/收起操作 ----------
@@ -2530,6 +2676,8 @@ export const record = {
       const action = btn.dataset.action;
       const index = btn.dataset.index !== undefined ? parseInt(btn.dataset.index) : null;
       const mode = btn.dataset.mode;
+      const count = btn.dataset.count;
+      const period = btn.dataset.period;
       
       // 收藏相关
       if (action === 'loadFavorite' && index !== null) record.loadFavorite(index);
@@ -2559,6 +2707,11 @@ export const record = {
       if (action === 'toggleMLPredictionHistory') record.toggleMLPredictionHistory();
       if (action === 'toggleMLPredictionDetailCollapse') record.toggleMLPredictionDetailCollapse();
       if (action === 'toggleZodiacPredictionDetailCollapse') record.toggleZodiacPredictionDetailCollapse();
+      
+      // ✅ 精选特码筛选弹窗
+      if (action === 'toggleSpecialFilterPopup') record.toggleSpecialFilterPopup();
+      if (action === 'closeSpecialFilterPopup') record.closeSpecialFilterPopup();
+      if (action === 'confirmSpecialFilter') record.confirmSpecialFilter();
 
       // 详细统计弹窗
       if (action === 'showDetailedStatistics') {
@@ -2579,6 +2732,12 @@ export const record = {
       if (action === 'toggleSpecialFiltersPanel') record.toggleSpecialFiltersPanel();
       if (action === 'confirmSpecialFilters') record.confirmSpecialFilters();
       if (action === 'switchSpecialHistoryMode' && mode) record.switchSpecialHistoryMode(mode);
+      
+      // ✅ 精选特码期数切换
+      if (action === 'switchSpecialHistoryPeriod' && period !== undefined) record.switchSpecialHistoryPeriod(period);
+      
+      // ✅ 精选特码显示数量切换
+      if (action === 'switchSpecialHistoryCount' && count !== undefined) record.switchSpecialHistoryCount(count);
       
       // 特码热门TOP5历史相关
       if (action === 'clearHotNumbersHistory') record.clearHotNumbersHistory();
@@ -2687,6 +2846,45 @@ export const record = {
       record.renderSpecialHistory();
       
       console.log('[Record] 📊 精选特码数量选择并保存:', numCount, '期数:', period);
+    });
+    
+    // ✅ 精选特码期数按钮点击事件（立即切换并更新显示）
+    document.addEventListener('click', (e) => {
+      const periodBtn = e.target.closest('.special-history-period-btn');
+      if (periodBtn && !periodBtn.dataset.action) {
+        const period = periodBtn.dataset.period;
+        if (period) {
+          record.switchSpecialHistoryPeriod(period);
+        }
+        return;
+      }
+      
+      const countBtn = e.target.closest('.special-history-count-btn');
+      if (!countBtn) return;
+      
+      // 如果按钮有 data-action，由上面的处理器处理
+      if (countBtn.dataset.action) return;
+      
+      const count = countBtn.dataset.count;
+      if (!count) return;
+      
+      // 调用切换方法
+      record.switchSpecialHistoryCount(count);
+    });
+    
+    // ✅ 点击弹窗外部关闭弹窗
+    document.addEventListener('click', (e) => {
+      const popup = document.getElementById('specialFilterPopup');
+      const filterBtn = document.getElementById('specialFilterBtn');
+      
+      if (!popup || popup.style.display === 'none') return;
+      
+      // 如果点击的是筛选按钮或弹窗内部，不关闭
+      if (filterBtn && filterBtn.contains(e.target)) return;
+      if (popup.contains(e.target)) return;
+      
+      // 点击外部，关闭弹窗
+      record.closeSpecialFilterPopup();
     });
     
     // localStorage变化监听，确保数据实时同步

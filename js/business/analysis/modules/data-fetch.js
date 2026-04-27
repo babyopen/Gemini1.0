@@ -419,50 +419,47 @@ export const dataFetch = {
         dataFetch._handleDataUpdate(cachedData.data, true);
       }
       
-      // 检查是否在开奖时间窗口内
-      if (dataFetch._isInDrawTimeWindow()) {
-        dataFetch._log('info', '在开奖时间窗口内，尝试获取最新数据');
+      // ✅ 无论是否在开奖时间窗口内，都尝试获取最新数据
+      let latestData = [];
+      let historyData = [];
+      let hasError = false;
+      
+      // 尝试获取最新开奖记录（失败不影响历史数据获取）
+      try {
+        latestData = await dataFetch._fetchLatestData();
+        dataFetch._log('info', '获取最新开奖记录成功');
+      } catch (latestError) {
+        dataFetch._log('warn', '获取最新开奖记录失败，将尝试获取历史数据:', latestError);
+        hasError = true;
+      }
+      
+      // 尝试获取历史数据
+      try {
+        const year = new Date().getFullYear();
+        historyData = await dataFetch._fetchHistoryData(year);
+        dataFetch._log('info', '获取历史数据成功');
+      } catch (historyError) {
+        dataFetch._log('warn', '获取历史数据失败:', historyError);
+        hasError = true;
+      }
+      
+      // 合并数据，最新开奖记录优先
+      const combinedData = [...latestData, ...historyData];
+      
+      if (combinedData.length > 0) {
+        const sortedData = dataFetch._processHistoryData(combinedData);
+        // 处理数据更新
+        dataFetch._handleDataUpdate(sortedData, true);
+        // 保存到本地存储
+        dataFetch._saveHistoryToStorage(sortedData);
+        dataFetch._log('info', '静默刷新历史数据成功');
         
-        let latestData = [];
-        let historyData = [];
-        let hasError = false;
-        
-        // 尝试获取最新开奖记录（失败不影响历史数据获取）
-        try {
-          latestData = await dataFetch._fetchLatestData();
-          dataFetch._log('info', '获取最新开奖记录成功');
-        } catch (latestError) {
-          dataFetch._log('warn', '获取最新开奖记录失败，将尝试获取历史数据:', latestError);
-          hasError = true;
-        }
-        
-        // 尝试获取历史数据
-        try {
-          const year = new Date().getFullYear();
-          historyData = await dataFetch._fetchHistoryData(year);
-          dataFetch._log('info', '获取历史数据成功');
-        } catch (historyError) {
-          dataFetch._log('warn', '获取历史数据失败:', historyError);
-          hasError = true;
-        }
-        
-        // 合并数据，最新开奖记录优先
-        const combinedData = [...latestData, ...historyData];
-        
-        if (combinedData.length > 0) {
-          const sortedData = dataFetch._processHistoryData(combinedData);
-          // 处理数据更新
-          dataFetch._handleDataUpdate(sortedData, true);
-          // 保存到本地存储
-          dataFetch._saveHistoryToStorage(sortedData);
-          dataFetch._log('info', '静默刷新历史数据成功');
-        } else {
-          // 没有任何数据，使用模拟数据
-          dataFetch._log('warn', '没有获取到任何数据，使用模拟数据');
-          dataFetch._tryUseMockData(true);
-        }
+        // ✅ 数据更新后，自动保存精选特码记录
+        dataFetch._autoSaveSpecialRecords();
       } else {
-        dataFetch._log('info', '不在开奖时间窗口内，使用本地存储数据');
+        // 没有任何数据，使用模拟数据
+        dataFetch._log('warn', '没有获取到任何数据，使用模拟数据');
+        dataFetch._tryUseMockData(true);
       }
     } catch(e) {
       dataFetch._log('warn', '静默刷新失败（API可能不可用）:', e);
@@ -527,6 +524,11 @@ export const dataFetch = {
           // 保存到本地存储
           dataFetch._saveHistoryToStorage(sortedData);
           dataFetch._log('info', '刷新历史数据成功');
+          
+          // ✅ 数据更新后，自动保存精选特码记录
+          if (!silent) {
+            dataFetch._autoSaveSpecialRecords();
+          }
           
           if (hasError && !silent) {
             Toast.show('部分数据加载失败，显示缓存数据');
@@ -609,6 +611,61 @@ export const dataFetch = {
     
     // 开奖时间窗口为21:32-21:35
     return hours === 21 && minutes >= 32 && minutes <= 35;
+  },
+
+  /**
+   * ✅ 后台自动保存精选特码记录
+   * 自动获取分析数据并保存所有16种组合（期数×数量）
+   */
+  _autoSaveSpecialRecords: async () => {
+    try {
+      const state = StateManager._state;
+      const { historyData } = state.analysis;
+      
+      // 检查是否有数据
+      if (!historyData || historyData.length === 0) {
+        dataFetch._log('warn', '无历史数据，跳过自动保存精选特码记录');
+        return;
+      }
+      
+      // 计算完整分析
+      const fullData = analysisCalc.calcFullAnalysis();
+      if (!fullData) {
+        dataFetch._log('warn', '无法计算分析数据，跳过自动保存精选特码记录');
+        return;
+      }
+      
+      // 获取热号和冷号
+      const config = CONFIG?.ANALYSIS || {};
+      const topCount = config.TOP_ZODIAC_COUNT || 12;
+      const fullNumZodiacMap = state.analysis?.fullNumZodiacMap || {};
+      
+      // 获取热门号码
+      const hotNumbers = analysisCalc.getHotNumbers(fullData, topCount, fullNumZodiacMap);
+      // 获取冷门号码
+      const coldNumbers = analysisCalc.getColdNumbers(fullData, topCount, fullNumZodiacMap);
+      
+      if (!hotNumbers || hotNumbers.length === 0) {
+        dataFetch._log('warn', '无热门号码数据，跳过自动保存精选特码记录');
+        return;
+      }
+      
+      // 获取最终显示的号码（使用热门号码作为主要数据）
+      const finalNums = hotNumbers.map(item => {
+        if (typeof item === 'object' && item.num !== undefined) {
+          return item.num;
+        }
+        return item;
+      });
+      
+      // 调用保存方法（使用 'hot' 模式）
+      await analysisRender.autoSaveSpecialRecord(finalNums, hotNumbers, coldNumbers, 'hot');
+      
+      dataFetch._log('info', '✅ 后台自动保存精选特码记录成功');
+    } catch (e) {
+      dataFetch._log('warn', '后台自动保存精选特码记录失败:', e);
+      // 不显示错误，保持静默
+    }
   },
 
   /**
