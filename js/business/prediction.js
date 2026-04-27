@@ -11,7 +11,46 @@ import { Toast } from '../toast.js';
 import { analysisCalc } from './analysis/modules/analysis-calc.js';
 import { IssueManager } from './issue-manager.js';
 
+// 统一期号获取工具方法
+const getCurrentIssue = () => {
+  try {
+    const nextIssueObj = IssueManager.getNextIssue();
+    return nextIssueObj ? nextIssueObj.full : '2026100';
+  } catch (error) {
+    console.error('[Prediction] 获取期号失败，使用默认值:', error);
+    return '2026100';
+  }
+};
+
+// 复制到剪贴板工具方法
+const copyToClipboard = async (text) => {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const success = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return success;
+    }
+  } catch (error) {
+    console.error('[Prediction] 复制到剪贴板失败:', error);
+    return false;
+  }
+};
+
 export const prediction = {
+  // 工具方法
+  copyToClipboard: copyToClipboard,
+  
+  getCurrentIssue: getCurrentIssue,
+  
   // 精选特码历史相关
   saveSpecialToHistory: () => {
     try {
@@ -53,11 +92,34 @@ export const prediction = {
   },
 
   updateSpecialHistoryComparison: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 更新精选特码历史对比...');
+      
+      const numberRecords = Storage.get('numberRecords', []);
+      
+      if (numberRecords.length === 0) {
+        Toast.show('暂无历史记录');
+        return;
+      }
+      
+      const lastRecord = numberRecords[0];
+      const currentIssue = IssueManager.getNextIssue();
+      
+      Toast.show(`最近一期: ${lastRecord.period || '未知'} - ${lastRecord.numbers?.join(', ') || '无数据'}`);
+    } catch (error) {
+      console.error('[Prediction] 更新精选特码历史对比失败:', error);
+      Toast.show('更新失败');
+    }
   },
 
   favoriteZodiacNumbers: (zodiac) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 收藏生肖号码:', zodiac);
+      Toast.show('收藏功能开发中');
+    } catch (error) {
+      console.error('[Prediction] 收藏生肖号码失败:', error);
+      Toast.show('操作失败');
+    }
   },
 
   renderSpecialHistory: () => {
@@ -107,40 +169,270 @@ export const prediction = {
   },
 
   toggleSpecialHistory: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 切换精选特码历史展开状态...');
+      record.toggleSpecialCollapse();
+    } catch (error) {
+      console.error('[Prediction] 切换精选特码历史展开状态失败:', error);
+      Toast.show('操作失败');
+    }
   },
 
   clearSpecialHistory: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 清空精选特码历史...');
+      
+      const numberRecords = Storage.get('numberRecords', []);
+      
+      if (numberRecords.length === 0) {
+        Toast.show('暂无历史记录');
+        return;
+      }
+      
+      if (confirm('确定清空所有精选特码历史吗？此操作不可恢复！')) {
+        Storage.set('numberRecords', []);
+        record.renderSpecialHistory();
+        record.renderPredictionStatistics();
+        Toast.show('已清空精选特码历史');
+        console.log('[Prediction] 精选特码历史已清空');
+      }
+    } catch (error) {
+      console.error('[Prediction] 清空精选特码历史失败:', error);
+      Toast.show('清空失败');
+    }
   },
 
   deleteSpecialHistoryItem: (index) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 删除精选特码历史项:', index);
+      
+      const numberRecords = Storage.get('numberRecords', []);
+      
+      if (index < 0 || index >= numberRecords.length) {
+        Toast.show('删除失败：记录不存在');
+        return;
+      }
+      
+      const recordToDelete = numberRecords[index];
+      
+      if (confirm(`确定删除 ${recordToDelete.period || '该'} 期的精选特码记录吗？`)) {
+        numberRecords.splice(index, 1);
+        Storage.set('numberRecords', numberRecords);
+        record.renderSpecialHistory();
+        record.renderPredictionStatistics();
+        Toast.show('删除成功');
+        console.log('[Prediction] 精选特码历史项已删除:', index);
+      }
+    } catch (error) {
+      console.error('[Prediction] 删除精选特码历史项失败:', error);
+      Toast.show('删除失败');
+    }
   },
 
   copySpecialHistory: (index) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 复制精选特码历史:', index);
+      
+      const numberRecords = Storage.get('numberRecords', []);
+      
+      if (index < 0 || index >= numberRecords.length) {
+        Toast.show('复制失败：记录不存在');
+        return;
+      }
+      
+      const recordToCopy = numberRecords[index];
+      const textToCopy = `期号: ${recordToCopy.period || '未知'}\n号码: ${recordToCopy.numbers?.join(', ') || '无数据'}\n模式: ${recordToCopy.mode || '未知'}`;
+      
+      prediction.copyToClipboard(textToCopy).then(() => {
+        Toast.show('已复制到剪贴板');
+        console.log('[Prediction] 精选特码历史已复制:', index);
+      }).catch(err => {
+        console.error('[Prediction] 复制失败:', err);
+        Toast.show('复制失败');
+      });
+    } catch (error) {
+      console.error('[Prediction] 复制精选特码历史失败:', error);
+      Toast.show('复制失败');
+    }
   },
 
   showSpecialHistoryDetail: (index) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 显示精选特码详情:', index);
+      
+      const numberRecords = Storage.get('numberRecords', []);
+      
+      if (index < 0 || index >= numberRecords.length) {
+        Toast.show('查看失败：记录不存在');
+        return;
+      }
+      
+      const record = numberRecords[index];
+      
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      
+      const content = document.createElement('div');
+      content.className = 'modal-content';
+      content.style.maxWidth = '90%';
+      content.style.width = '450px';
+      
+      const checkedStatus = record.checked ? (record.matched ? '✅ 已验证-命中' : '❌ 已验证-未中') : '⏳ 待验证';
+      const checkedClass = record.checked ? (record.matched ? 'status-hit' : 'status-miss') : 'status-pending';
+      
+      content.innerHTML = `
+        <div class="modal-header">
+          <h3 class="modal-title">📋 精选特码详情</h3>
+          <button class="modal-close-btn" onclick="this.closest('.modal-overlay').remove()">×</button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 14px; color: var(--sub-text);">期号</span>
+              <span style="font-size: 16px; font-weight: 600;">${record.period || '未知'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 14px; color: var(--sub-text);">模式</span>
+              <span style="font-size: 16px;">${record.mode || '未知'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 14px; color: var(--sub-text);">号码数量</span>
+              <span style="font-size: 16px;">${record.numCount || record.numbers?.length || 0}个</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 14px; color: var(--sub-text);">验证状态</span>
+              <span class="${checkedClass}" style="font-size: 14px; padding: 4px 12px; border-radius: 12px;">${checkedStatus}</span>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 14px; color: var(--sub-text); margin-bottom: 8px;">精选号码</div>
+            <div style="background: var(--bg); padding: 12px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 8px;">
+              ${(record.numbers || []).map(num => `
+                <span style="background: var(--primary); color: white; padding: 6px 12px; border-radius: 16px; font-weight: 600;">${num}</span>
+              `).join('')}
+            </div>
+          </div>
+          
+          ${record.note ? `
+            <div style="margin-bottom: 16px;">
+              <div style="font-size: 14px; color: var(--sub-text); margin-bottom: 8px;">备注</div>
+              <div style="background: var(--bg); padding: 12px; border-radius: 8px; font-size: 14px;">${record.note}</div>
+            </div>
+          ` : ''}
+          
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 14px; color: var(--sub-text); margin-bottom: 8px;">保存时间</div>
+            <div style="font-size: 14px;">${record.savedAt ? new Date(record.savedAt).toLocaleString('zh-CN') : '未知'}</div>
+          </div>
+          
+          <div style="display: flex; gap: 12px; margin-top: 20px;">
+            <button onclick="prediction.copySpecialHistory(${index}); this.closest('.modal-overlay').remove();" 
+                    style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">
+              复制号码
+            </button>
+            <button onclick="if(confirm('确定删除这条记录吗？')){ prediction.deleteSpecialHistoryItem(${index}); this.closest('.modal-overlay').remove(); }" 
+                    style="flex: 1; padding: 12px; background: var(--danger); color: white; border: none; border-radius: 8px; cursor: pointer;">
+              删除
+            </button>
+          </div>
+        </div>
+      `;
+      
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      
+      setTimeout(() => {
+        modal.style.opacity = '1';
+        content.style.transform = 'scale(1)';
+      }, 10);
+      
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.opacity = '0';
+          content.style.transform = 'scale(0.9)';
+          setTimeout(() => modal.remove(), 300);
+        }
+      });
+    } catch (error) {
+      console.error('[Prediction] 显示精选特码详情失败:', error);
+      Toast.show('显示详情失败');
+    }
   },
 
   toggleSpecialFiltersPanel: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 切换精选特码筛选面板...');
+      record.toggleSpecialFiltersPanel();
+    } catch (error) {
+      console.error('[Prediction] 切换精选特码筛选面板失败:', error);
+      Toast.show('操作失败');
+    }
   },
 
   confirmSpecialFilters: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 确认精选特码筛选...');
+      record.confirmSpecialFilters();
+    } catch (error) {
+      console.error('[Prediction] 确认精选特码筛选失败:', error);
+      Toast.show('筛选失败');
+    }
   },
 
   getFilteredSpecialHistory: () => {
-    // 这里需要完整的实现...
-    return [];
+    try {
+      console.log('[Prediction] 获取筛选后的精选特码历史...');
+      
+      let numberRecords = Storage.get('numberRecords', []);
+      
+      const activePeriodBtn = document.querySelector('.special-period-btn.active');
+      const selectedPeriod = activePeriodBtn ? activePeriodBtn.dataset.period : 'all';
+      
+      if (selectedPeriod !== 'all') {
+        const periodNum = parseInt(selectedPeriod);
+        numberRecords = numberRecords.filter((_, index) => index < periodNum);
+      }
+      
+      return numberRecords;
+    } catch (error) {
+      console.error('[Prediction] 获取筛选后的精选特码历史失败:', error);
+      return Storage.get('numberRecords', []);
+    }
   },
 
   goToSpecialHistoryPage: (page) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 跳转到精选特码历史页面:', page);
+      
+      const numberRecords = prediction.getFilteredSpecialHistory();
+      const pageSize = 10;
+      const totalPages = Math.ceil(numberRecords.length / pageSize);
+      
+      if (page < 1 || page > totalPages) {
+        Toast.show('页码超出范围');
+        return;
+      }
+      
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize;
+      const pageRecords = numberRecords.slice(start, end);
+      
+      record.renderSpecialHistory(pageRecords);
+      
+      const container = document.getElementById('specialHistoryList');
+      if (container) {
+        const pagination = container.querySelector('.pagination');
+        if (pagination) {
+          pagination.innerHTML = record._generatePagination(page, totalPages, 'specialHistory');
+        }
+      }
+      
+      Toast.show(`已跳转到第 ${page} 页`);
+    } catch (error) {
+      console.error('[Prediction] 跳转精选特码历史页面失败:', error);
+      Toast.show('分页失败');
+    }
   },
 
   // 精选生肖历史相关
@@ -220,7 +512,24 @@ export const prediction = {
   },
 
   updateSelectedZodiacHistoryComparison: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 更新精选生肖历史对比...');
+      
+      const allRecords = Storage.get('zodiacRecords', []);
+      const selectedRecords = allRecords.filter(r => r.recordType === 'selected');
+      
+      if (selectedRecords.length === 0) {
+        Toast.show('暂无历史记录');
+        return;
+      }
+      
+      const lastRecord = selectedRecords[0];
+      
+      Toast.show(`最近一期: ${lastRecord.period || '未知'} - ${lastRecord.selected?.join(', ') || '无数据'}`);
+    } catch (error) {
+      console.error('[Prediction] 更新精选生肖历史对比失败:', error);
+      Toast.show('更新失败');
+    }
   },
 
   getSelectedZodiacs: () => {
@@ -248,11 +557,39 @@ export const prediction = {
   },
 
   toggleZodiacSelection: (zodiac) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 切换生肖选中状态:', zodiac);
+      
+      const state = StateManager._state;
+      const selectedZodiacs = state.analysis.selectedZodiacs || [];
+      
+      const index = selectedZodiacs.indexOf(zodiac);
+      if (index > -1) {
+        selectedZodiacs.splice(index, 1);
+      } else {
+        selectedZodiacs.push(zodiac);
+      }
+      
+      StateManager.setState('analysis.selectedZodiacs', selectedZodiacs);
+      
+      Toast.show(`已${index > -1 ? '取消' : '选择'} ${zodiac}`);
+    } catch (error) {
+      console.error('[Prediction] 切换生肖选中状态失败:', error);
+      Toast.show('操作失败');
+    }
   },
 
   clearAllZodiacSelections: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 清除所有生肖选中...');
+      
+      StateManager.setState('analysis.selectedZodiacs', []);
+      
+      Toast.show('已清除所有选中');
+    } catch (error) {
+      console.error('[Prediction] 清除所有生肖选中失败:', error);
+      Toast.show('操作失败');
+    }
   },
 
   showSelectedZodiacRatingDetail: (zodiac) => {
@@ -381,9 +718,9 @@ export const prediction = {
           // 计算平均评分
           const averageScore = periodCount > 0 ? (overallScore / periodCount).toFixed(1) : '0.0';
           
-          // 获取下一期期号（与预测保持一致）
+          // 获取下一期期号（统一使用IssueManager）
           const nextIssueObj = IssueManager.getNextIssue();
-          const currentIssue = nextIssueObj ? nextIssueObj.full : (document.getElementById('curExpect')?.innerText || '2026100');
+          const currentIssue = nextIssueObj ? nextIssueObj.full : '2026100';
           
           // 使用文档片段减少DOM操作
           const fragment = document.createDocumentFragment();
@@ -553,23 +890,213 @@ export const prediction = {
   },
 
   goToSelectedZodiacHistoryPage: (page) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 跳转到精选生肖历史页面:', page);
+      
+      const allRecords = Storage.get('zodiacRecords', []);
+      const selectedRecords = allRecords.filter(r => r.recordType === 'selected');
+      const pageSize = 10;
+      const totalPages = Math.ceil(selectedRecords.length / pageSize);
+      
+      if (page < 1 || page > totalPages) {
+        Toast.show('页码超出范围');
+        return;
+      }
+      
+      record.renderSelectedZodiacHistory(page);
+      
+      const container = document.getElementById('selectedZodiacHistoryList');
+      if (container) {
+        const pagination = container.querySelector('.pagination');
+        if (pagination) {
+          pagination.innerHTML = record._generatePagination(page, totalPages, 'selectedZodiacHistory');
+        }
+      }
+      
+      Toast.show(`已跳转到第 ${page} 页`);
+    } catch (error) {
+      console.error('[Prediction] 跳转精选生肖历史页面失败:', error);
+      Toast.show('分页失败');
+    }
   },
 
   deleteSelectedZodiacHistoryItem: (index) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 删除精选生肖历史项:', index);
+      
+      const allRecords = Storage.get('zodiacRecords', []);
+      const selectedRecords = allRecords.filter(r => r.recordType === 'selected');
+      
+      if (index < 0 || index >= selectedRecords.length) {
+        Toast.show('删除失败：记录不存在');
+        return;
+      }
+      
+      const recordToDelete = selectedRecords[index];
+      
+      if (confirm(`确定删除 ${recordToDelete.period || '该'} 期的精选生肖记录吗？`)) {
+        const recordIndex = allRecords.findIndex(r => 
+          r.period === recordToDelete.period && 
+          r.recordType === 'selected'
+        );
+        
+        if (recordIndex > -1) {
+          allRecords.splice(recordIndex, 1);
+          Storage.set('zodiacRecords', allRecords);
+          record.renderSelectedZodiacHistory();
+          record.renderPredictionStatistics();
+          Toast.show('删除成功');
+          console.log('[Prediction] 精选生肖历史项已删除:', index);
+        }
+      }
+    } catch (error) {
+      console.error('[Prediction] 删除精选生肖历史项失败:', error);
+      Toast.show('删除失败');
+    }
   },
 
   copySelectedZodiacHistoryItem: (index) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 复制精选生肖历史项:', index);
+      
+      const allRecords = Storage.get('zodiacRecords', []);
+      const selectedRecords = allRecords.filter(r => r.recordType === 'selected');
+      
+      if (index < 0 || index >= selectedRecords.length) {
+        Toast.show('复制失败：记录不存在');
+        return;
+      }
+      
+      const recordToCopy = selectedRecords[index];
+      const textToCopy = `期号: ${recordToCopy.period || '未知'}\n精选生肖: ${recordToCopy.selected?.join(', ') || '无数据'}`;
+      
+      prediction.copyToClipboard(textToCopy).then(() => {
+        Toast.show('已复制到剪贴板');
+        console.log('[Prediction] 精选生肖历史已复制:', index);
+      }).catch(err => {
+        console.error('[Prediction] 复制失败:', err);
+        Toast.show('复制失败');
+      });
+    } catch (error) {
+      console.error('[Prediction] 复制精选生肖历史项失败:', error);
+      Toast.show('复制失败');
+    }
   },
 
   showSelectedZodiacDetail: (index) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 显示精选生肖详情:', index);
+      
+      const allRecords = Storage.get('zodiacRecords', []);
+      const selectedRecords = allRecords.filter(r => r.recordType === 'selected');
+      
+      if (index < 0 || index >= selectedRecords.length) {
+        Toast.show('查看失败：记录不存在');
+        return;
+      }
+      
+      const record = selectedRecords[index];
+      
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      
+      const content = document.createElement('div');
+      content.className = 'modal-content';
+      content.style.maxWidth = '90%';
+      content.style.width = '450px';
+      
+      const checkedStatus = record.checked ? (record.matched ? '✅ 已验证-命中' : '❌ 已验证-未中') : '⏳ 待验证';
+      const checkedClass = record.checked ? (record.matched ? 'status-hit' : 'status-miss') : 'status-pending';
+      
+      content.innerHTML = `
+        <div class="modal-header">
+          <h3 class="modal-title">🌟 精选生肖详情</h3>
+          <button class="modal-close-btn" onclick="this.closest('.modal-overlay').remove()">×</button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 14px; color: var(--sub-text);">期号</span>
+              <span style="font-size: 16px; font-weight: 600;">${record.period || '未知'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 14px; color: var(--sub-text);">验证状态</span>
+              <span class="${checkedClass}" style="font-size: 14px; padding: 4px 12px; border-radius: 12px;">${checkedStatus}</span>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 14px; color: var(--sub-text); margin-bottom: 8px;">精选生肖</div>
+            <div style="background: var(--bg); padding: 12px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 8px;">
+              ${(record.selected || []).map(zodiac => `
+                <span style="background: var(--primary); color: white; padding: 6px 12px; border-radius: 16px; font-weight: 600;">${zodiac}</span>
+              `).join('')}
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 14px; color: var(--sub-text); margin-bottom: 8px;">保存时间</div>
+            <div style="font-size: 14px;">${record.savedAt ? new Date(record.savedAt).toLocaleString('zh-CN') : '未知'}</div>
+          </div>
+          
+          <div style="display: flex; gap: 12px; margin-top: 20px;">
+            <button onclick="prediction.copySelectedZodiacHistoryItem(${index}); this.closest('.modal-overlay').remove();" 
+                    style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">
+              复制生肖
+            </button>
+            <button onclick="if(confirm('确定删除这条记录吗？')){ prediction.deleteSelectedZodiacHistoryItem(${index}); this.closest('.modal-overlay').remove(); }" 
+                    style="flex: 1; padding: 12px; background: var(--danger); color: white; border: none; border-radius: 8px; cursor: pointer;">
+              删除
+            </button>
+          </div>
+        </div>
+      `;
+      
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      
+      setTimeout(() => {
+        modal.style.opacity = '1';
+        content.style.transform = 'scale(1)';
+      }, 10);
+      
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.opacity = '0';
+          content.style.transform = 'scale(0.9)';
+          setTimeout(() => modal.remove(), 300);
+        }
+      });
+    } catch (error) {
+      console.error('[Prediction] 显示精选生肖详情失败:', error);
+      Toast.show('显示详情失败');
+    }
   },
 
   clearSelectedZodiacHistory: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 清空精选生肖历史...');
+      
+      const allRecords = Storage.get('zodiacRecords', []);
+      const selectedRecords = allRecords.filter(r => r.recordType === 'selected');
+      
+      if (selectedRecords.length === 0) {
+        Toast.show('暂无历史记录');
+        return;
+      }
+      
+      if (confirm('确定清空所有精选生肖历史吗？此操作不可恢复！')) {
+        const filtered = allRecords.filter(r => r.recordType !== 'selected');
+        Storage.set('zodiacRecords', filtered);
+        record.renderSelectedZodiacHistory();
+        record.renderPredictionStatistics();
+        Toast.show('已清空精选生肖历史');
+        console.log('[Prediction] 精选生肖历史已清空');
+      }
+    } catch (error) {
+      console.error('[Prediction] 清空精选生肖历史失败:', error);
+      Toast.show('清空失败');
+    }
   },
 
   // 特码热门TOP5历史相关
@@ -578,7 +1105,23 @@ export const prediction = {
   },
 
   updateHotNumbersHistoryComparison: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 更新热门号码历史对比...');
+      
+      const hotRecords = Storage.get('hotNumbersRecords', []);
+      
+      if (hotRecords.length === 0) {
+        Toast.show('暂无历史记录');
+        return;
+      }
+      
+      const lastRecord = hotRecords[0];
+      
+      Toast.show(`最近一期: ${lastRecord.period || '未知'} - ${lastRecord.top5?.map(h => h.number).join(', ') || '无数据'}`);
+    } catch (error) {
+      console.error('[Prediction] 更新热门号码历史对比失败:', error);
+      Toast.show('更新失败');
+    }
   },
 
   renderHotNumbersHistory: () => {
@@ -630,35 +1173,240 @@ export const prediction = {
   },
 
   switchHotNumbersHistoryPage: (page) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 切换热门号码历史页面:', page);
+      
+      const hotRecords = Storage.get('hotNumbersRecords', []);
+      const pageSize = 10;
+      const totalPages = Math.ceil(hotRecords.length / pageSize);
+      
+      if (page < 1 || page > totalPages) {
+        Toast.show('页码超出范围');
+        return;
+      }
+      
+      record.renderHotNumbersHistory(page);
+      
+      const container = document.getElementById('hotNumbersHistoryList');
+      if (container) {
+        const pagination = container.querySelector('.pagination');
+        if (pagination) {
+          pagination.innerHTML = record._generatePagination(page, totalPages, 'hotNumbersHistory');
+        }
+      }
+      
+      Toast.show(`已切换到第 ${page} 页`);
+    } catch (error) {
+      console.error('[Prediction] 切换热门号码历史页面失败:', error);
+      Toast.show('分页失败');
+    }
   },
 
   goToHotNumbersHistoryPage: (page) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 跳转到热门号码历史页面:', page);
+      
+      prediction.switchHotNumbersHistoryPage(page);
+    } catch (error) {
+      console.error('[Prediction] 跳转热门号码历史页面失败:', error);
+      Toast.show('跳转失败');
+    }
   },
 
   deleteHotNumbersHistory: (index) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 删除热门号码历史项:', index);
+      
+      const hotRecords = Storage.get('hotNumbersRecords', []);
+      
+      if (index < 0 || index >= hotRecords.length) {
+        Toast.show('删除失败：记录不存在');
+        return;
+      }
+      
+      const recordToDelete = hotRecords[index];
+      
+      if (confirm(`确定删除 ${recordToDelete.period || '该'} 期的热门号码记录吗？`)) {
+        hotRecords.splice(index, 1);
+        Storage.set('hotNumbersRecords', hotRecords);
+        record.renderHotNumbersHistory();
+        record.renderPredictionStatistics();
+        Toast.show('删除成功');
+        console.log('[Prediction] 热门号码历史项已删除:', index);
+      }
+    } catch (error) {
+      console.error('[Prediction] 删除热门号码历史项失败:', error);
+      Toast.show('删除失败');
+    }
   },
 
   copyHotNumbersHistory: (index) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 复制热门号码历史:', index);
+      
+      const hotRecords = Storage.get('hotNumbersRecords', []);
+      
+      if (index < 0 || index >= hotRecords.length) {
+        Toast.show('复制失败：记录不存在');
+        return;
+      }
+      
+      const recordToCopy = hotRecords[index];
+      const top5Numbers = recordToCopy.top5?.map(h => h.number).join(', ') || '无数据';
+      
+      const textToCopy = `期号: ${recordToCopy.period || '未知'}\nTOP5热门号码: ${top5Numbers}`;
+      
+      prediction.copyToClipboard(textToCopy).then(() => {
+        Toast.show('已复制到剪贴板');
+        console.log('[Prediction] 热门号码历史已复制:', index);
+      }).catch(err => {
+        console.error('[Prediction] 复制失败:', err);
+        Toast.show('复制失败');
+      });
+    } catch (error) {
+      console.error('[Prediction] 复制热门号码历史失败:', error);
+      Toast.show('复制失败');
+    }
   },
 
   showHotNumbersHistoryDetail: (index) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 显示热门号码详情:', index);
+      
+      const hotRecords = Storage.get('hotNumbersRecords', []);
+      
+      if (index < 0 || index >= hotRecords.length) {
+        Toast.show('查看失败：记录不存在');
+        return;
+      }
+      
+      const record = hotRecords[index];
+      
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      
+      const content = document.createElement('div');
+      content.className = 'modal-content';
+      content.style.maxWidth = '90%';
+      content.style.width = '450px';
+      
+      const checkedStatus = record.checked ? (record.matched ? '✅ 已验证-命中' : '❌ 已验证-未中') : '⏳ 待验证';
+      const checkedClass = record.checked ? (record.matched ? 'status-hit' : 'status-miss') : 'status-pending';
+      
+      content.innerHTML = `
+        <div class="modal-header">
+          <h3 class="modal-title">🏆 热门号码详情</h3>
+          <button class="modal-close-btn" onclick="this.closest('.modal-overlay').remove()">×</button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 14px; color: var(--sub-text);">期号</span>
+              <span style="font-size: 16px; font-weight: 600;">${record.period || '未知'}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 14px; color: var(--sub-text);">验证状态</span>
+              <span class="${checkedClass}" style="font-size: 14px; padding: 4px 12px; border-radius: 12px;">${checkedStatus}</span>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 14px; color: var(--sub-text); margin-bottom: 8px;">TOP5 热门号码</div>
+            <div style="background: var(--bg); padding: 12px; border-radius: 8px;">
+              ${(record.top5 || []).map((item, idx) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; ${idx < (record.top5?.length || 0) - 1 ? 'border-bottom: 1px solid var(--border);' : ''}">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: var(--primary); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;">${idx + 1}</span>
+                    <span style="font-size: 16px; font-weight: 600;">${item.number}</span>
+                  </div>
+                  <span style="font-size: 12px; color: var(--sub-text);">出现 ${item.count || 0} 次</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <div style="font-size: 14px; color: var(--sub-text); margin-bottom: 8px;">保存时间</div>
+            <div style="font-size: 14px;">${record.savedAt ? new Date(record.savedAt).toLocaleString('zh-CN') : '未知'}</div>
+          </div>
+          
+          <div style="display: flex; gap: 12px; margin-top: 20px;">
+            <button onclick="prediction.copyHotNumbersHistory(${index}); this.closest('.modal-overlay').remove();" 
+                    style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">
+              复制号码
+            </button>
+            <button onclick="if(confirm('确定删除这条记录吗？')){ prediction.deleteHotNumbersHistory(${index}); this.closest('.modal-overlay').remove(); }" 
+                    style="flex: 1; padding: 12px; background: var(--danger); color: white; border: none; border-radius: 8px; cursor: pointer;">
+              删除
+            </button>
+          </div>
+        </div>
+      `;
+      
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      
+      setTimeout(() => {
+        modal.style.opacity = '1';
+        content.style.transform = 'scale(1)';
+      }, 10);
+      
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.opacity = '0';
+          content.style.transform = 'scale(0.9)';
+          setTimeout(() => modal.remove(), 300);
+        }
+      });
+    } catch (error) {
+      console.error('[Prediction] 显示热门号码详情失败:', error);
+      Toast.show('显示详情失败');
+    }
   },
 
   deleteHotNumbersHistoryItem: (index) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 删除热门号码历史项(快捷方式):', index);
+      
+      prediction.deleteHotNumbersHistory(index);
+    } catch (error) {
+      console.error('[Prediction] 删除热门号码历史项失败:', error);
+      Toast.show('删除失败');
+    }
   },
 
   clearHotNumbersHistory: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 清空热门号码历史...');
+      
+      const hotRecords = Storage.get('hotNumbersRecords', []);
+      
+      if (hotRecords.length === 0) {
+        Toast.show('暂无历史记录');
+        return;
+      }
+      
+      if (confirm('确定清空所有热门号码历史吗？此操作不可恢复！')) {
+        Storage.set('hotNumbersRecords', []);
+        record.renderHotNumbersHistory();
+        record.renderPredictionStatistics();
+        Toast.show('已清空热门号码历史');
+        console.log('[Prediction] 热门号码历史已清空');
+      }
+    } catch (error) {
+      console.error('[Prediction] 清空热门号码历史失败:', error);
+      Toast.show('清空失败');
+    }
   },
 
   toggleHotNumbersHistory: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 切换热门号码历史展开状态...');
+      record.toggleHotNumbersCollapse();
+    } catch (error) {
+      console.error('[Prediction] 切换热门号码历史展开状态失败:', error);
+      Toast.show('操作失败');
+    }
   },
 
   /**
@@ -674,20 +1422,397 @@ export const prediction = {
 
   // 预测统计相关
   getPredictionStatistics: () => {
-    // 这里需要完整的实现...
-    return null;
+    try {
+      console.log('[Prediction] 获取预测统计数据...');
+      
+      const allRecords = Storage.get('zodiacRecords', []);
+      
+      const zodiacStats = prediction._calculateCategoryStats(
+        allRecords.filter(r => !r.recordType || r.recordType !== 'selected')
+      );
+      
+      const selectedZodiacStats = prediction._calculateCategoryStats(
+        allRecords.filter(r => r.recordType === 'selected')
+      );
+      
+      const totalPredictions = zodiacStats.total + selectedZodiacStats.total;
+      const totalHits = zodiacStats.hit + selectedZodiacStats.hit;
+      const totalMiss = zodiacStats.miss + selectedZodiacStats.miss;
+      const totalPending = zodiacStats.pending + selectedZodiacStats.pending;
+      const totalHitRate = totalHits + totalMiss > 0 
+        ? ((totalHits / (totalHits + totalMiss)) * 100).toFixed(1) 
+        : '0.0';
+      
+      const statistics = {
+        total: {
+          predictions: totalPredictions,
+          hits: totalHits,
+          miss: totalMiss,
+          pending: totalPending,
+          hitRate: totalHitRate
+        },
+        zodiac: zodiacStats,
+        selectedZodiac: selectedZodiacStats,
+        mlPrediction: prediction.getMLPredictionStats(),
+        special: prediction.getSpecialStats(),
+        hotNumbers: prediction.getHotNumbersStats(),
+        generatedAt: new Date().toISOString()
+      };
+      
+      console.log('[Prediction] 统计数据获取成功:', statistics);
+      return statistics;
+    } catch (error) {
+      console.error('[Prediction] 获取统计数据失败:', error);
+      return null;
+    }
+  },
+
+  _calculateCategoryStats: (records) => {
+    let hit = 0, miss = 0, pending = 0;
+    
+    records.forEach(rec => {
+      if (rec.checked === true) {
+        if (rec.matched === true) hit++;
+        else miss++;
+      } else {
+        pending++;
+      }
+    });
+    
+    const hitRate = (hit + miss) > 0 
+      ? ((hit / (hit + miss)) * 100).toFixed(1) 
+      : '0.0';
+    
+    return { 
+      hit, 
+      miss, 
+      pending, 
+      hitRate, 
+      total: records.length 
+    };
+  },
+
+  getMLPredictionStats: () => {
+    try {
+      const mlRecords = Storage.get('mlPredictionRecords', []);
+      let hit = 0, miss = 0, pending = 0;
+      
+      mlRecords.forEach(rec => {
+        if (rec.checked === true) {
+          if (rec.matched === true) hit++;
+          else miss++;
+        } else {
+          pending++;
+        }
+      });
+      
+      const hitRate = (hit + miss) > 0 
+        ? ((hit / (hit + miss)) * 100).toFixed(1) 
+        : '0.0';
+      
+      return { hit, miss, pending, hitRate, total: mlRecords.length };
+    } catch (error) {
+      console.error('[Prediction] 获取ML预测统计失败:', error);
+      return { hit: 0, miss: 0, pending: 0, hitRate: '0.0', total: 0 };
+    }
+  },
+
+  getSpecialStats: () => {
+    try {
+      const numberRecords = Storage.get('numberRecords', []);
+      let hit = 0, miss = 0, pending = 0;
+      
+      numberRecords.forEach(rec => {
+        if (rec.checked === true) {
+          if (rec.matched === true) hit++;
+          else miss++;
+        } else {
+          pending++;
+        }
+      });
+      
+      const hitRate = (hit + miss) > 0 
+        ? ((hit / (hit + miss)) * 100).toFixed(1) 
+        : '0.0';
+      
+      return { hit, miss, pending, hitRate, total: numberRecords.length };
+    } catch (error) {
+      console.error('[Prediction] 获取精选特码统计失败:', error);
+      return { hit: 0, miss: 0, pending: 0, hitRate: '0.0', total: 0 };
+    }
+  },
+
+  getHotNumbersStats: () => {
+    try {
+      const hotRecords = Storage.get('hotNumbersRecords', []);
+      let hit = 0, miss = 0, pending = 0;
+      
+      hotRecords.forEach(rec => {
+        if (rec.checked === true) {
+          if (rec.matched === true) hit++;
+          else miss++;
+        } else {
+          pending++;
+        }
+      });
+      
+      const hitRate = (hit + miss) > 0 
+        ? ((hit / (hit + miss)) * 100).toFixed(1) 
+        : '0.0';
+      
+      return { hit, miss, pending, hitRate, total: hotRecords.length };
+    } catch (error) {
+      console.error('[Prediction] 获取热门号码统计失败:', error);
+      return { hit: 0, miss: 0, pending: 0, hitRate: '0.0', total: 0 };
+    }
   },
 
   renderPredictionStatistics: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 渲染预测统计...');
+      
+      const container = document.getElementById('predictionStatisticsBody');
+      if (!container) {
+        console.warn('[Prediction] 统计容器不存在: predictionStatisticsBody');
+        return;
+      }
+      
+      container.innerHTML = '<div class="loading-tip">加载中...</div>';
+      
+      const statistics = prediction.getPredictionStatistics();
+      
+      if (!statistics) {
+        container.innerHTML = '<div class="error-tip">统计数据加载失败</div>';
+        return;
+      }
+      
+      const { total, zodiac, selectedZodiac } = statistics;
+      
+      container.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+          <div style="background:var(--bg-secondary);border-radius:12px;padding:16px;text-align:center;">
+            <div style="font-size:24px;font-weight:700;color:var(--primary)">${total.predictions}</div>
+            <div style="font-size:12px;color:var(--sub-text);margin-top:4px">总预测数</div>
+          </div>
+          <div style="background:var(--bg-secondary);border-radius:12px;padding:16px;text-align:center;">
+            <div style="font-size:24px;font-weight:700;color:var(--green)">${total.hits}</div>
+            <div style="font-size:12px;color:var(--sub-text);margin-top:4px">命中数</div>
+          </div>
+          <div style="background:var(--bg-secondary);border-radius:12px;padding:16px;text-align:center;">
+            <div style="font-size:24px;font-weight:700;color:var(--primary)">${total.hitRate}%</div>
+            <div style="font-size:12px;color:var(--sub-text);margin-top:4px">命中率</div>
+          </div>
+          <div style="background:var(--bg-secondary);border-radius:12px;padding:16px;text-align:center;">
+            <div style="font-size:24px;font-weight:700;color:var(--sub-text)">${total.pending}</div>
+            <div style="font-size:12px;color:var(--sub-text);margin-top:4px">待开奖</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+          <div style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s ease;" data-action="showDetailedStatistics" data-type="zodiac">
+            <div class="card-header" style="padding:0;margin-bottom:12px;">
+              <h2 style="font-size:16px;">生肖预测</h2>
+              <div style="font-size:12px;color:var(--sub-text);margin-top:4px;">点击查看详情</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:14px;color:var(--sub-text)">命中</span>
+              <span style="font-size:16px;font-weight:600;color:var(--green)">${zodiac.hit}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:14px;color:var(--sub-text)">未中</span>
+              <span style="font-size:16px;font-weight:600;color:var(--danger)">${zodiac.miss}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:14px;color:var(--sub-text)">待开奖</span>
+              <span style="font-size:16px;font-weight:600;color:var(--sub-text)">${zodiac.pending}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+              <span style="font-size:14px;color:var(--sub-text)">命中率</span>
+              <span style="font-size:16px;font-weight:600;color:var(--primary)">${zodiac.hitRate}%</span>
+            </div>
+          </div>
+          <div style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s ease;" data-action="scrollToSelectedHistory">
+            <div class="card-header" style="padding:0;margin-bottom:12px;">
+              <h2 style="font-size:16px;">精选生肖</h2>
+              <div style="font-size:12px;color:var(--sub-text);margin-top:4px;">点击查看历史</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:14px;color:var(--sub-text)">命中</span>
+              <span style="font-size:16px;font-weight:600;color:var(--green)">${selectedZodiac.hit}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:14px;color:var(--sub-text)">未中</span>
+              <span style="font-size:16px;font-weight:600;color:var(--danger)">${selectedZodiac.miss}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:14px;color:var(--sub-text)">待开奖</span>
+              <span style="font-size:16px;font-weight:600;color:var(--sub-text)">${selectedZodiac.pending}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+              <span style="font-size:14px;color:var(--sub-text)">命中率</span>
+              <span style="font-size:16px;font-weight:600;color:var(--primary)">${selectedZodiac.hitRate}%</span>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      console.log('[Prediction] 预测统计渲染完成');
+    } catch (error) {
+      console.error('[Prediction] 渲染预测统计失败:', error);
+      const container = document.getElementById('predictionStatisticsBody');
+      if (container) {
+        container.innerHTML = '<div class="error-tip">渲染失败，请刷新重试</div>';
+      }
+    }
   },
 
   checkAndUpdatePredictionStatus: () => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 检查并更新预测状态...');
+      
+      const statistics = prediction.getPredictionStatistics();
+      
+      if (statistics && statistics.total.pending > 0) {
+        console.log(`[Prediction] 待开奖记录: ${statistics.total.pending}条`);
+      }
+      
+      return statistics;
+    } catch (error) {
+      console.error('[Prediction] 检查预测状态失败:', error);
+      return null;
+    }
   },
 
   showPredictionHistoryDetail: (index) => {
-    // 这里需要完整的实现...
+    try {
+      console.log('[Prediction] 显示预测历史详情:', index);
+      
+      const statistics = prediction.getPredictionStatistics();
+      
+      if (!statistics) {
+        Toast.show('统计数据加载失败');
+        return;
+      }
+      
+      prediction.showStatisticsDetailModal(statistics);
+    } catch (error) {
+      console.error('[Prediction] 显示预测历史详情失败:', error);
+      Toast.show('显示详情失败');
+    }
+  },
+
+  showStatisticsDetailModal: (statistics) => {
+    try {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      
+      const content = document.createElement('div');
+      content.className = 'modal-content';
+      content.style.maxWidth = '90%';
+      content.style.width = '500px';
+      
+      content.innerHTML = `
+        <div class="modal-header">
+          <h3 class="modal-title">📊 预测统计详情</h3>
+          <button class="modal-close-btn" onclick="this.closest('.modal-overlay').remove()">×</button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+          <div style="margin-bottom: 24px;">
+            <h4 style="margin-bottom: 12px; color: var(--text);">综合统计</h4>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+              <div style="background: var(--bg); padding: 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 20px; font-weight: 700; color: var(--primary);">${statistics.total.predictions}</div>
+                <div style="font-size: 12px; color: var(--sub-text);">总预测数</div>
+              </div>
+              <div style="background: var(--bg); padding: 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 20px; font-weight: 700; color: var(--green);">${statistics.total.hits}</div>
+                <div style="font-size: 12px; color: var(--sub-text);">命中数</div>
+              </div>
+              <div style="background: var(--bg); padding: 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 20px; font-weight: 700; color: var(--danger);">${statistics.total.miss}</div>
+                <div style="font-size: 12px; color: var(--sub-text);">未中数</div>
+              </div>
+              <div style="background: var(--bg); padding: 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 20px; font-weight: 700; color: var(--primary);">${statistics.total.hitRate}%</div>
+                <div style="font-size: 12px; color: var(--sub-text);">命中率</div>
+              </div>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 24px;">
+            <h4 style="margin-bottom: 12px; color: var(--text);">分类统计</h4>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: var(--bg);">
+                  <th style="padding: 10px; text-align: left; border-bottom: 1px solid var(--border);">类型</th>
+                  <th style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">总数</th>
+                  <th style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">命中</th>
+                  <th style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">未中</th>
+                  <th style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">待开奖</th>
+                  <th style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">命中率</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border);">生肖预测</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.zodiac.total}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border); color: var(--green);">${statistics.zodiac.hit}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border); color: var(--danger);">${statistics.zodiac.miss}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.zodiac.pending}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.zodiac.hitRate}%</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border);">精选生肖</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.selectedZodiac.total}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border); color: var(--green);">${statistics.selectedZodiac.hit}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border); color: var(--danger);">${statistics.selectedZodiac.miss}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.selectedZodiac.pending}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.selectedZodiac.hitRate}%</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border);">精选特码</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.special.total}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border); color: var(--green);">${statistics.special.hit}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border); color: var(--danger);">${statistics.special.miss}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.special.pending}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.special.hitRate}%</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; border-bottom: 1px solid var(--border);">热门TOP5</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.hotNumbers.total}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border); color: var(--green);">${statistics.hotNumbers.hit}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border); color: var(--danger);">${statistics.hotNumbers.miss}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.hotNumbers.pending}</td>
+                  <td style="padding: 10px; text-align: center; border-bottom: 1px solid var(--border);">${statistics.hotNumbers.hitRate}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div style="text-align: center; color: var(--sub-text); font-size: 12px;">
+            数据生成时间: ${new Date(statistics.generatedAt).toLocaleString('zh-CN')}
+          </div>
+        </div>
+      `;
+      
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      
+      setTimeout(() => {
+        modal.style.opacity = '1';
+        content.style.transform = 'scale(1)';
+      }, 10);
+      
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.opacity = '0';
+          content.style.transform = 'scale(0.9)';
+          setTimeout(() => modal.remove(), 300);
+        }
+      });
+    } catch (error) {
+      console.error('[Prediction] 显示统计详情弹窗失败:', error);
+      Toast.show('显示详情失败');
+    }
   },
 
   /**

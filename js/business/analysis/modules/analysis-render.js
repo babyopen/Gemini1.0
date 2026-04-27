@@ -235,9 +235,10 @@ export const analysisRender = {
    * 虚拟列表组件
    */
   VirtualList: {
-    itemHeight: 80, // 每个历史记录项的高度
-    visibleCount: 20, // 可见区域显示的项目数
-    buffer: 5, // 缓冲区项目数
+    itemHeight: 72,
+    visibleCount: 20,
+    buffer: 5,
+    maxItemsForSimpleRender: 50,
     
     /**
      * 渲染虚拟列表
@@ -252,10 +253,43 @@ export const analysisRender = {
         return;
       }
       
-      // 计算总高度
+      if(data.length <= analysisRender.VirtualList.maxItemsForSimpleRender) {
+        container.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        data.forEach((item) => {
+          try {
+            const escapedOpenCode = Utils.escapeHtml(item.openCode || '0,0,0,0,0,0,0');
+            const codeArr = escapedOpenCode.split(',');
+            const s = analysisCalc.getSpecial(item);
+            const zodArr = s?.fullZodArr || [];
+            let balls = '';
+            for(let i = 0; i < 6; i++) {
+              const num = Number(codeArr[i]);
+              balls += analysisCalc.buildBall(codeArr[i], analysisCalc.getColor(num), zodArr[i] || '');
+            }
+            const teNum = Number(codeArr[6]);
+            balls += '<div class="ball-sep">+</div>' + analysisCalc.buildBall(codeArr[6], analysisCalc.getColor(teNum), zodArr[6] || '');
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'history-item';
+            itemDiv.innerHTML = `
+              <div class="history-expect">第${Utils.escapeHtml(item.expect || '')}期</div>
+              <div class="ball-group">${balls}</div>
+            `;
+            fragment.appendChild(itemDiv);
+          } catch(e) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'history-item';
+            itemDiv.innerHTML = `<div class="history-expect">数据错误</div><div class="ball-group">数据加载失败</div>`;
+            fragment.appendChild(itemDiv);
+          }
+        });
+        container.appendChild(fragment);
+        return;
+      }
+      
       const totalHeight = data.length * analysisRender.VirtualList.itemHeight;
       
-      // 创建滚动容器
       container.innerHTML = `
         <div class="virtual-list-container" style="position: relative; overflow-y: auto; height: ${analysisRender.VirtualList.visibleCount * analysisRender.VirtualList.itemHeight}px;">
           <div class="virtual-list-placeholder" style="height: ${totalHeight}px; position: relative;"></div>
@@ -266,10 +300,8 @@ export const analysisRender = {
       const scrollContainer = container.querySelector('.virtual-list-container');
       const contentContainer = container.querySelector('.virtual-list-content');
       
-      // 初始渲染
       analysisRender.VirtualList.update(contentContainer, data, 0);
       
-      // 滚动事件监听
       scrollContainer.addEventListener('scroll', () => {
         const scrollTop = scrollContainer.scrollTop;
         const startIndex = Math.max(0, Math.floor(scrollTop / analysisRender.VirtualList.itemHeight) - analysisRender.VirtualList.buffer);
@@ -310,17 +342,14 @@ export const analysisRender = {
           
           const itemDiv = document.createElement('div');
           itemDiv.className = 'history-item';
-          itemDiv.style.height = `${analysisRender.VirtualList.itemHeight}px`;
           itemDiv.innerHTML = `
             <div class="history-expect">第${Utils.escapeHtml(item.expect || '')}期</div>
             <div class="ball-group">${balls}</div>
           `;
           fragment.appendChild(itemDiv);
         } catch(e) {
-          console.error('渲染历史记录项失败:', e);
           const itemDiv = document.createElement('div');
           itemDiv.className = 'history-item';
-          itemDiv.style.height = `${analysisRender.VirtualList.itemHeight}px`;
           itemDiv.innerHTML = `
             <div class="history-expect">数据错误</div>
             <div class="ball-group">数据加载失败</div>
@@ -664,9 +693,9 @@ export const analysisRender = {
                     // 保存ML预测历史
                     const { Storage } = await import('../../../storage.js');
                     
-                    // ✅ 获取下一期期号（与生肖预测保持一致）
+                    // ✅ 获取下一期期号（统一使用IssueManager）
                     const nextIssueObj = IssueManager.getNextIssue();
-                    const issue = nextIssueObj ? nextIssueObj.full : (document.getElementById('curExpect')?.innerText || '2026100');
+                    const issue = nextIssueObj ? nextIssueObj.full : '2026100';
                     
                     console.log('[ML] 💾 保存预测 - 期号:', issue, '(下一期)');
                     

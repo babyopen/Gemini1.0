@@ -621,34 +621,72 @@
   }
 }
 
-/* 历史记录项 */
+/* 历史记录项 - 自动高度 */
 .history-item {
-  padding: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--border);
+  min-width: 0;
 }
 
 .history-item:last-child {
   border-bottom: none;
 }
 
-/* 分析页面历史记录项 - 垂直布局 */
-.history-item:has(.history-expect) {
-  display: block;
-  padding: 14px 0;
+.history-expect {
+  font-size: 12px;
+  color: var(--sub-text);
+  margin: 0;
+  text-align: left;
+  flex-shrink: 0;
 }
 
-.history-expect {
-  font-size: 14px;
+/* 历史记录专用球样式 */
+.history-item .ball-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.history-item .ball {
+  width: clamp(20px, 5vw, 30px);
+  height: clamp(20px, 5vw, 30px);
+  font-size: clamp(9px, 2.5vw, 13px);
+  flex-shrink: 0;
+}
+
+.history-item .ball-zodiac {
+  font-size: clamp(6px, 1.8vw, 9px);
   color: var(--sub-text);
-  margin-bottom: 12px;
-  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.history-item .ball-sep {
+  font-size: clamp(8px, 2.5vw, 14px);
+  color: var(--sub-text);
+  font-weight: 700;
+  flex-shrink: 0;
+  align-self: center;
+  padding: 0 1px;
 }
 
 .history-item .ball-group {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 2px;
   margin: 0;
   padding: 0;
+  flex-shrink: 0;
 }
 
 /* 生肖关联专用样式 */

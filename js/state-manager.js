@@ -9,6 +9,9 @@ import { Utils } from './utils.js';
 import { Render } from './render.js';
 import { Toast } from './toast.js';
 
+const _stateChangeListeners = new Map();
+const _pendingUpdates = new Set();
+
 export const StateManager = {
   /**
    * 私有状态对象
@@ -301,6 +304,85 @@ export const StateManager = {
    * @returns {Array} 状态变更历史
    */
   getHistory: () => Utils.deepClone(StateManager._history),
+  
+  /**
+   * 订阅状态变化
+   * @param {string} key - 状态路径
+   * @param {Function} callback - 回调函数
+   * @returns {Function} 取消订阅函数
+   */
+  subscribe: (key, callback) => {
+    if (!_stateChangeListeners.has(key)) {
+      _stateChangeListeners.set(key, new Set());
+    }
+    _stateChangeListeners.get(key).add(callback);
+    
+    return () => {
+      const listeners = _stateChangeListeners.get(key);
+      if (listeners) {
+        listeners.delete(callback);
+      }
+    };
+  },
+  
+  /**
+   * 批量更新状态（合并多次更新为一次渲染）
+   * @param {Function} updater - 更新函数
+   */
+  batchUpdate: (updater) => {
+    if (_pendingUpdates.has(updater)) return;
+    
+    _pendingUpdates.add(updater);
+    
+    requestAnimationFrame(() => {
+      updater(StateManager._state);
+      StateManager.setState({}, true, '批量更新');
+      _pendingUpdates.delete(updater);
+    });
+  },
+  
+  /**
+   * 选择性渲染更新（只更新特定部分）
+   * @param {string} path - 状态路径
+   */
+  partialRender: (path) => {
+    const value = StateManager.getStateByPath(path);
+    
+    if (path === 'filter.selected') {
+      Render.renderTagStatus();
+    } else if (path === 'filter.excluded') {
+      Render.renderExcludeGrid();
+    } else if (path === 'data.numList') {
+      Render.renderResult();
+    }
+    
+    const listeners = _stateChangeListeners.get(path);
+    if (listeners) {
+      listeners.forEach(callback => {
+        try {
+          callback(value);
+        } catch (e) {
+          console.error('状态监听器执行失败:', e);
+        }
+      });
+    }
+  },
+  
+  /**
+   * 获取状态变更历史记录数
+   * @returns {number}
+   */
+  getHistoryCount: () => StateManager._history.length,
+  
+  /**
+   * 清理历史记录（释放内存）
+   * @param {number} keepCount - 保留记录数
+   */
+  trimHistory: (keepCount = 50) => {
+    if (StateManager._history.length > keepCount) {
+      StateManager._history = StateManager._history.slice(-keepCount);
+    }
+  },
   
   /**
    * 保存状态到本地存储

@@ -6,11 +6,14 @@
  */
 export const CONFIG = Object.freeze({
   VERSION: '1.0',
-  DATA_VERSION: 1, // 数据版本号，用于后续数据迁移
-  // API配置（默认值，用户可自定义）
+  DATA_VERSION: 1,
   API: Object.freeze({
-    LATEST: 'https://macaumarksix.com/api/macaujc2.com',
-    HISTORY: 'https://history.macaumarksix.com/history/macaujc2/y/'
+    LATEST: (
+      'https://macaumarksix.com/api/macaujc2.com'
+    ),
+    HISTORY: (
+      'https://history.macaumarksix.com/history/macaujc2/y/'
+    )
   }),
   // 动画配置
   TOAST_DURATION: 2000,

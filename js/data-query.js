@@ -5,8 +5,10 @@
  */
 import { CONFIG } from './config.js';
 
-// 导入必要的模块
 import { StateManager } from './state-manager.js';
+
+const _lazyInitPromise = null;
+const _initQueue = [];
 
 export const DataQuery = {
   /**
@@ -26,6 +28,35 @@ export const DataQuery = {
    * @private
    */
   _conditionCache: new Map(),
+
+  /**
+   * 检查是否已初始化
+   * @returns {boolean}
+   */
+  isInitialized: () => DataQuery._numToAttrMap !== null && DataQuery._attrToNumMap !== null,
+
+  /**
+   * 延迟初始化（提高应用启动速度）
+   * @returns {Promise}
+   */
+  initAsync: async () => {
+    if (DataQuery.isInitialized()) return;
+    
+    await new Promise(resolve => {
+      if (document.readyState === 'complete') {
+        resolve();
+      } else {
+        window.addEventListener('load', resolve, { once: true });
+      }
+    });
+    
+    DataQuery.init();
+    
+    _initQueue.forEach(fn => {
+      try { fn(); } catch (e) { console.error('init callback error:', e); }
+    });
+    _initQueue.length = 0;
+  },
 
   /**
    * 初始化数据查询模块（预计算所有映射关系）
@@ -75,6 +106,25 @@ export const DataQuery = {
     DataQuery._numToAttrMap = null;
     DataQuery._attrToNumMap = null;
     DataQuery._conditionCache.clear();
+  },
+  
+  /**
+   * 批量获取多个号码的属性（优化批量查询）
+   * @param {Array<number>} nums - 号码数组
+   * @returns {Array<Object>} 属性数组
+   */
+  getBatchNumAttrs: (nums) => {
+    DataQuery.init();
+    return nums.map(num => DataQuery.getNumAttrs(num));
+  },
+  
+  /**
+   * 预加载号码属性（批量初始化）
+   * @param {Array<number>} nums - 号码数组
+   */
+  preloadNumAttrs: (nums) => {
+    DataQuery.init();
+    nums.forEach(num => DataQuery.getNumAttrs(num));
   },
 
   /**

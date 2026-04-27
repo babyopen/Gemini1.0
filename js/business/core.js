@@ -364,12 +364,14 @@ export const core = {
       const newFavorites = state.system.favorites.filter(fav => fav.name !== item.name);
       StateManager.setState({ system: { ...state.system, favorites: newFavorites } }, false);
       Storage.set('favorites', newFavorites);
+      window.dispatchEvent(new StorageEvent('storage', { key: 'favorites' }));
       Toast.show('已取消收藏');
     } else {
       // 添加收藏
       const newFavorites = [...state.system.favorites, item];
       StateManager.setState({ system: { ...state.system, favorites: newFavorites } }, false);
       Storage.set('favorites', newFavorites);
+      window.dispatchEvent(new StorageEvent('storage', { key: 'favorites' }));
       Toast.show('收藏成功');
     }
   },
@@ -396,6 +398,7 @@ export const core = {
     newFavorites.splice(index, 1);
     StateManager.setState({ system: { ...state.system, favorites: newFavorites } }, false);
     Storage.set('favorites', newFavorites);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'favorites' }));
     core.renderFavoriteList();
     Toast.show('已移除收藏');
   },
@@ -512,6 +515,7 @@ export const core = {
     newFavorites[index].name = newName.trim();
     Storage.set('favorites', newFavorites);
     StateManager.setState({ system: { ...state.system, favorites: newFavorites } }, false);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'favorites' }));
     core.renderFavoriteList();
     Toast.show('重命名成功');
   },

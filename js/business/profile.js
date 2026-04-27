@@ -328,6 +328,18 @@ export const profile = {
 
       document.body.appendChild(modal);
 
+      // 处理外部链接点击
+      const externalLinks = modal.querySelectorAll('[data-action="openExternalLink"]');
+      externalLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const url = link.dataset.url;
+          if (url) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }
+        });
+      });
+
       // 关闭模态框的点击事件
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
@@ -556,9 +568,9 @@ export const profile = {
               <p>© 2026 生肖特码分析工具</p>
             </div>
             <div style="display: flex; justify-content: center; gap: 16px;">
-              <a href="#" style="color: #333; text-decoration: none;">官方网站</a>
-              <a href="#" style="color: #333; text-decoration: none;">使用条款</a>
-              <a href="#" style="color: #333; text-decoration: none;">隐私政策</a>
+              <a href="#" data-action="openExternalLink" data-url="https://github.com" style="color: #333; text-decoration: none;">官方网站</a>
+              <a href="#" data-action="openExternalLink" data-url="https://github.com/terms" style="color: #333; text-decoration: none;">使用条款</a>
+              <a href="#" data-action="openExternalLink" data-url="https://github.com/privacy" style="color: #333; text-decoration: none;">隐私政策</a>
             </div>
           </div>
           <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 10px 20px; border-top: 1px solid #eee;">
@@ -568,6 +580,18 @@ export const profile = {
       `;
 
       document.body.appendChild(modal);
+
+      // 处理外部链接点击
+      const externalLinks = modal.querySelectorAll('[data-action="openExternalLink"]');
+      externalLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const url = link.dataset.url;
+          if (url) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }
+        });
+      });
 
       // 关闭模态框的点击事件
       modal.addEventListener('click', (e) => {

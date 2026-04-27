@@ -325,7 +325,63 @@
         <button class="btn-mini" data-action="refreshPredictionStatistics" style="font-size:11px;">刷新</button>
       </div>
       <div class="card-body" id="predictionStatisticsBody">
-        <div style="text-align:center;color:var(--sub-text);padding:20px;">加载中...</div>
+        <div class="selected-zodiac-summary-card" onclick="record.showDetailedStatistics('zodiac')">
+          <div class="summary-card-row">
+            <div class="summary-card-item">
+              <div class="summary-card-value" id="selectedZodiacTotal">0</div>
+              <div class="summary-card-label">预测次数</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" id="selectedZodiacHit" style="color:var(--success);">0</div>
+              <div class="summary-card-label">命中</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" id="selectedZodiacMiss" style="color:var(--danger);">0</div>
+              <div class="summary-card-label">未中</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" id="selectedZodiacPending" style="color:#FF9800;">0</div>
+              <div class="summary-card-label">待开奖</div>
+            </div>
+          </div>
+          <div class="summary-card-latest">
+            <span class="summary-card-latest-content" id="selectedZodiacLatestContent">暂无数据</span>
+          </div>
+          <div class="summary-card-footer">
+            <span>命中率</span>
+            <span class="summary-card-rate" id="selectedZodiacRate">0.0%</span>
+            <span class="summary-card-arrow">→ 查看详情</span>
+          </div>
+        </div>
+        
+        <div class="selected-zodiac-summary-card" id="zodiacPredictionSummaryCard" onclick="record.showZodiacPredictionHistory()" style="margin-top:12px;">
+          <div class="summary-card-row">
+            <div class="summary-card-item">
+              <div class="summary-card-value" id="zodiacPredictionTotal">0</div>
+              <div class="summary-card-label">预测次数</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:var(--success);" id="zodiacPredictionHit">0</div>
+              <div class="summary-card-label">命中</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:var(--danger);" id="zodiacPredictionMiss">0</div>
+              <div class="summary-card-label">未中</div>
+            </div>
+            <div class="summary-card-item">
+              <div class="summary-card-value" style="color:#FF9800;" id="zodiacPredictionPending">0</div>
+              <div class="summary-card-label">待开奖</div>
+            </div>
+          </div>
+          <div class="summary-card-latest">
+            <span class="summary-card-latest-content" id="zodiacPredictionLatestContent">暂无数据</span>
+          </div>
+          <div class="summary-card-footer">
+            <span>命中率</span>
+            <span class="summary-card-rate" id="zodiacPredictionRate">0.0%</span>
+            <span class="summary-card-arrow">→ 查看历史</span>
+          </div>
+        </div>
       </div>
     </div>
     <div class="card" id="selectedZodiacHistorySection">

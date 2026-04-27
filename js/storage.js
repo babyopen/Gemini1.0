@@ -264,9 +264,10 @@ export const Storage = {
   /**
    * 保存生肖记录
    * @param {Object} recordData - 生肖记录对象
+   * @param {boolean} autoRefresh - 是否自动刷新记录页面
    * @returns {boolean} 是否成功
    */
-  saveZodiacRecord: (recordData) => {
+  saveZodiacRecord: (recordData, autoRefresh = true) => {
     try {
       if (!recordData || !recordData.issue || !recordData.zodiacs) {
         console.error('保存生肖记录失败：数据不完整');
@@ -274,21 +275,18 @@ export const Storage = {
       }
 
       const records = Storage.get(Storage.KEYS.ZODIAC_RECORDS, []);
-      // 基于issue和recordType的组合来检查重复
       const existingIndex = records.findIndex(r => 
         r.issue === recordData.issue && 
         r.recordType === recordData.recordType
       );
       
       if (existingIndex >= 0) {
-        // 更新现有记录
         records[existingIndex] = {
           ...records[existingIndex],
           ...recordData,
           updatedAt: Date.now()
         };
       } else {
-        // 添加新记录
         records.unshift({
           ...recordData,
           createdAt: Date.now(),
@@ -298,12 +296,19 @@ export const Storage = {
         });
       }
       
-      // 只保留最近50条记录
       if (records.length > 50) {
         records.splice(50);
       }
       
-      return Storage.set(Storage.KEYS.ZODIAC_RECORDS, records);
+      const result = Storage.set(Storage.KEYS.ZODIAC_RECORDS, records);
+      
+      if (result && autoRefresh) {
+        setTimeout(() => {
+          window.dispatchEvent(new StorageEvent('storage', { key: 'zodiacRecords' }));
+        }, 50);
+      }
+      
+      return result;
     } catch (e) {
       console.error('保存生肖记录失败:', e);
       return false;
@@ -427,9 +432,10 @@ export const Storage = {
   /**
    * 保存号码记录
    * @param {Object} recordData - 号码记录对象
+   * @param {boolean} autoRefresh - 是否自动刷新记录页面
    * @returns {boolean} 是否成功
    */
-  saveNumberRecord: (recordData) => {
+  saveNumberRecord: (recordData, autoRefresh = true) => {
     try {
       if (!recordData || !recordData.issue || !recordData.numbers) {
         console.error('保存号码记录失败：数据不完整');
@@ -438,8 +444,6 @@ export const Storage = {
 
       const records = Storage.get(Storage.KEYS.NUMBER_RECORDS, []);
       
-      // ✅ 使用复合键去重：期号 + 期数范围 + 号码数量
-      // 这样同一期号的不同筛选条件可以分别保存
       const existingIndex = records.findIndex(r => 
         r.issue === recordData.issue && 
         r.period === recordData.period && 
@@ -447,7 +451,6 @@ export const Storage = {
       );
       
       if (existingIndex >= 0) {
-        // 更新现有记录
         records[existingIndex] = {
           ...records[existingIndex],
           ...recordData,
@@ -455,7 +458,6 @@ export const Storage = {
         };
         console.log('🔄 更新现有记录:', { issue: recordData.issue, period: recordData.period, numCount: recordData.numCount });
       } else {
-        // 添加新记录
         records.unshift({
           ...recordData,
           createdAt: Date.now(),
@@ -466,12 +468,19 @@ export const Storage = {
         console.log('➕ 添加新记录:', { issue: recordData.issue, period: recordData.period, numCount: recordData.numCount });
       }
       
-      // ✅ 只保留最近200条记录（支持批量保存：16条组合 × 12期）
       if (records.length > 200) {
         records.splice(200);
       }
       
-      return Storage.set(Storage.KEYS.NUMBER_RECORDS, records);
+      const result = Storage.set(Storage.KEYS.NUMBER_RECORDS, records);
+      
+      if (result && autoRefresh) {
+        setTimeout(() => {
+          window.dispatchEvent(new StorageEvent('storage', { key: 'numberRecords' }));
+        }, 50);
+      }
+      
+      return result;
     } catch (e) {
       console.error('保存号码记录失败:', e);
       return false;
@@ -663,9 +672,10 @@ export const Storage = {
   /**
    * 保存特码热门TOP5记录
    * @param {Object} recordData - 特码热门TOP5记录对象
+   * @param {boolean} autoRefresh - 是否自动刷新记录页面
    * @returns {boolean} 是否成功
    */
-  saveHotNumbersRecord: (recordData) => {
+  saveHotNumbersRecord: (recordData, autoRefresh = true) => {
     try {
       if (!recordData || !recordData.issue || !recordData.numbers) {
         console.error('保存特码热门TOP5记录失败：数据不完整');
@@ -676,14 +686,12 @@ export const Storage = {
       const existingIndex = records.findIndex(r => r.issue === recordData.issue);
       
       if (existingIndex >= 0) {
-        // 更新现有记录
         records[existingIndex] = {
           ...records[existingIndex],
           ...recordData,
           updatedAt: Date.now()
         };
       } else {
-        // 添加新记录
         records.unshift({
           ...recordData,
           createdAt: Date.now(),
@@ -691,12 +699,19 @@ export const Storage = {
         });
       }
       
-      // 只保留最近50条记录
       if (records.length > 50) {
         records.splice(50);
       }
       
-      return Storage.set('hotNumbersRecords', records);
+      const result = Storage.set('hotNumbersRecords', records);
+      
+      if (result && autoRefresh) {
+        setTimeout(() => {
+          window.dispatchEvent(new StorageEvent('storage', { key: 'hotNumbersRecords' }));
+        }, 50);
+      }
+      
+      return result;
     } catch (e) {
       console.error('保存特码热门TOP5记录失败:', e);
       return false;

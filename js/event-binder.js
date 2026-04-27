@@ -10,6 +10,11 @@ import { DataQuery } from './data-query.js';
 import { Filter } from './filter.js';
 import { Toast } from './toast.js';
 
+const _actionHandlers = new Map();
+const _debouncedActions = new Set();
+
+const registerAction = (action, handler) => _actionHandlers.set(action, handler);
+
 export const EventBinder = {
   /**
    * 初始化所有事件绑定
@@ -19,37 +24,28 @@ export const EventBinder = {
   _touchStartY: 0,
   _touchEndX: 0,
   _touchEndY: 0,
-  _minSwipeDistance: 50, // 最小滑动距离
-  _edgeSwipeWidth: 30,   // 边缘滑动检测宽度
+  _minSwipeDistance: 50,
+  _edgeSwipeWidth: 30,
   
   // 下拉刷新相关状态
   _pullStartY: 0,
   _pullCurrentY: 0,
   _isPulling: false,
-  _pullThreshold: 80, // 触发刷新的阈值
-  _maxPullDistance: 150, // 最大下拉距离
+  _pullThreshold: 80,
+  _maxPullDistance: 150,
 
   init: () => {
-    // 全局点击事件委托
     document.addEventListener('click', EventBinder.handleGlobalClick);
-    // 全局change事件委托
     document.addEventListener('change', EventBinder.handleGlobalChange);
-    // 键盘回车/空格事件（无障碍支持）
     document.addEventListener('keydown', EventBinder.handleKeyDown);
-    // 滚动事件（已节流）
     window.addEventListener('scroll', Business.handleScroll);
-    // 点击空白关闭快捷导航
     document.addEventListener('click', EventBinder.handleClickOutside);
-    // 页面卸载清理
     window.addEventListener('beforeunload', Business.handlePageUnload);
-    // 全局错误捕获
     window.addEventListener('error', EventBinder.handleGlobalError);
     
-    // 添加触摸滑动事件监听（用于分析页面标签切换）
     document.addEventListener('touchstart', EventBinder.handleTouchStart, { passive: true });
     document.addEventListener('touchend', EventBinder.handleTouchEnd, { passive: true });
     
-    // 添加下拉刷新事件监听
     const pullContainer = document.getElementById('analysisPullContainer');
     if(pullContainer) {
       pullContainer.addEventListener('touchstart', EventBinder.handlePullStart, { passive: false });
@@ -57,17 +53,13 @@ export const EventBinder = {
       pullContainer.addEventListener('touchend', EventBinder.handlePullEnd, { passive: true });
     }
     
-    // 记录页面下拉刷新
     const recordPullContainer = document.getElementById('recordPullContainer');
     if(recordPullContainer) {
       recordPullContainer.addEventListener('touchstart', EventBinder.handleRecordPullStart, { passive: false });
       recordPullContainer.addEventListener('touchmove', EventBinder.handleRecordPullMove, { passive: false });
       recordPullContainer.addEventListener('touchend', EventBinder.handleRecordPullEnd, { passive: true });
     }
-    
 
-    
-    // 分析页面：全维度分析选择器change事件
     const analyzeSelect = document.getElementById('analyzeSelect');
     if(analyzeSelect) {
       analyzeSelect.addEventListener('change', function() {
@@ -75,7 +67,6 @@ export const EventBinder = {
       });
     }
     
-    // 分析页面：特码生肖关联选择器change事件
     const zodiacAnalyzeSelect = document.getElementById('zodiacAnalyzeSelect');
     if(zodiacAnalyzeSelect) {
       zodiacAnalyzeSelect.addEventListener('change', function() {
@@ -83,7 +74,6 @@ export const EventBinder = {
       });
     }
     
-    // 分析页面：号码数量选择器change事件
     const numCountSelect = document.getElementById('numCountSelect');
     const customNumCount = document.getElementById('customNumCount');
     
@@ -195,10 +185,46 @@ export const EventBinder = {
       const index = actionBtn.dataset.index;
       
       // 分组操作
-      if(action === CONFIG.ACTIONS.RESET_GROUP) StateManager.resetGroup(group);
+      if(action === CONFIG.ACTIONS.RESET_GROUP) {
+        // 检查是否是大小单双卡片，需要操作所有相关分组
+        const card = actionBtn.closest('.card');
+        if (card && card.id === 'mod-bs') {
+          // 大小单双卡片：操作所有相关分组（bs、sumOdd、sumBig、tailBig）
+          ['bs', 'sumOdd', 'sumBig', 'tailBig'].forEach(g => {
+            StateManager.resetGroup(g);
+          });
+          console.log('[EventBinder] 大小单双卡片：已清除所有分组');
+        } else {
+          StateManager.resetGroup(group);
+        }
+      }
       if(action === CONFIG.ACTIONS.SELECT_GROUP) StateManager.selectGroup(group);
-      if(action === CONFIG.ACTIONS.INVERT_GROUP) StateManager.invertGroup(group);
-      if(action === CONFIG.ACTIONS.CLEAR_GROUP) StateManager.resetGroup(group);
+      if(action === CONFIG.ACTIONS.INVERT_GROUP) {
+        // 检查是否是大小单双卡片，需要操作所有相关分组
+        const card = actionBtn.closest('.card');
+        if (card && card.id === 'mod-bs') {
+          // 大小单双卡片：操作所有相关分组（bs、sumOdd、sumBig、tailBig）
+          ['bs', 'sumOdd', 'sumBig', 'tailBig'].forEach(g => {
+            StateManager.invertGroup(g);
+          });
+          console.log('[EventBinder] 大小单双卡片：已反选所有分组');
+        } else {
+          StateManager.invertGroup(group);
+        }
+      }
+      if(action === CONFIG.ACTIONS.CLEAR_GROUP) {
+        // 检查是否是大小单双卡片，需要操作所有相关分组
+        const card = actionBtn.closest('.card');
+        if (card && card.id === 'mod-bs') {
+          // 大小单双卡片：操作所有相关分组（bs、sumOdd、sumBig、tailBig）
+          ['bs', 'sumOdd', 'sumBig', 'tailBig'].forEach(g => {
+            StateManager.resetGroup(g);
+          });
+          console.log('[EventBinder] 大小单双卡片：已清除所有分组');
+        } else {
+          StateManager.resetGroup(group);
+        }
+      }
       // 全局操作
       if(action === CONFIG.ACTIONS.SELECT_ALL) Filter.selectAllFilters();
       if(action === CONFIG.ACTIONS.CLEAR_ALL) Filter.clearAllFilters();

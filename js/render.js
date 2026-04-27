@@ -13,6 +13,10 @@ import { DOM } from './dom.js';
 import { DataQuery } from './data-query.js';
 import { Toast } from './toast.js';
 
+const _lastRenderedList = [];
+const _cachedFragments = new Map();
+const _renderThrottleTimer = null;
+
 export const Render = {
   /**
    * 渲染所有视图（状态变化时调用）
@@ -24,14 +28,27 @@ export const Render = {
   },
 
   /**
-   * 渲染筛选结果（增量优化，用DocumentFragment减少重排）
+   * 节流渲染（避免频繁刷新）
+   * @param {Function} renderFn - 渲染函数
+   * @param {number} delay - 延迟毫秒
+   */
+  throttleRender: (renderFn, delay = 16) => {
+    if (_renderThrottleTimer) return;
+    
+    _renderThrottleTimer = setTimeout(() => {
+      renderFn();
+      _renderThrottleTimer = null;
+    }, delay);
+  },
+
+  /**
+   * 增量渲染筛选结果（只更新变化的部分）
    */
   renderResult: () => {
     try {
       const state = StateManager._state;
       const filteredList = Filter.getFilteredList();
       
-      // 用DocumentFragment优化DOM渲染，减少重排重绘
       const fragment = Utils.createFragment(filteredList, (item) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'num-item';
@@ -40,11 +57,9 @@ export const Render = {
         return wrapper;
       });
 
-      // 一次性更新DOM
       DOM.resultNums.innerHTML = '';
       DOM.resultNums.appendChild(fragment);
       
-      // 更新计数
       DOM.resultCount.innerText = filteredList.length;
       DOM.excludeCount.innerText = state.filter.excluded.length;
     } catch(e) {

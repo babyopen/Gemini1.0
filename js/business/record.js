@@ -184,6 +184,7 @@ export const record = {
     if (confirm('确定清空所有收藏吗？')) {
       Storage.set('favorites', []);
       StateManager.setState({ system: { ...StateManager._state.system, favorites: [] } }, false);
+      window.dispatchEvent(new StorageEvent('storage', { key: 'favorites' }));
       record.renderFavoriteList();
       Toast.show('已清空所有收藏');
     }
@@ -194,6 +195,7 @@ export const record = {
       favorites.splice(index, 1);
       Storage.set('favorites', favorites);
       StateManager.setState({ system: { ...StateManager._state.system, favorites: favorites } }, false);
+      window.dispatchEvent(new StorageEvent('storage', { key: 'favorites' }));
       record.renderFavoriteList();
       Toast.show('已移除收藏');
     }
@@ -215,6 +217,7 @@ export const record = {
       item.name = newName.trim();
       Storage.set('favorites', favorites);
       StateManager.setState({ system: { ...StateManager._state.system, favorites: favorites } }, false);
+      window.dispatchEvent(new StorageEvent('storage', { key: 'favorites' }));
       record.renderFavoriteList();
       Toast.show('重命名成功');
     }
@@ -231,94 +234,90 @@ export const record = {
 
   // ---------- 预测统计 ----------
   renderPredictionStatistics: () => {
-    const container = document.getElementById('predictionStatisticsBody');
-    if (!container) {
-      console.warn('[Record] 容器不存在: predictionStatisticsBody');
-      return;
-    }
-    
-    // 显示加载状态
-    container.innerHTML = '<div class="loading-tip">加载中...</div>';
-    
     try {
-      // ✅ 直接获取数据，不清除缓存
-      const zodiacStats = record._getCategoryStats('zodiac');
-      const selectedZodiacStats = record._getCategoryStats('selectedZodiac');
-      const totalPredictions = zodiacStats.total + selectedZodiacStats.total;
-      const totalHits = zodiacStats.hit + selectedZodiacStats.hit;
-      const totalMiss = zodiacStats.miss + selectedZodiacStats.miss;
-      const totalPending = zodiacStats.pending + selectedZodiacStats.pending;
-      const hitRate = totalHits + totalMiss > 0 ? ((totalHits / (totalHits + totalMiss)) * 100).toFixed(1) : '0.0';
-      container.innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
-          <div style="background:var(--bg-secondary);border-radius:12px;padding:16px;text-align:center;">
-            <div style="font-size:24px;font-weight:700;color:var(--primary)">${totalPredictions}</div>
-            <div style="font-size:12px;color:var(--sub-text);margin-top:4px">总预测数</div>
-          </div>
-          <div style="background:var(--bg-secondary);border-radius:12px;padding:16px;text-align:center;">
-            <div style="font-size:24px;font-weight:700;color:var(--green)">${totalHits}</div>
-            <div style="font-size:12px;color:var(--sub-text);margin-top:4px">命中数</div>
-          </div>
-          <div style="background:var(--bg-secondary);border-radius:12px;padding:16px;text-align:center;">
-            <div style="font-size:24px;font-weight:700;color:var(--primary)">${hitRate}%</div>
-            <div style="font-size:12px;color:var(--sub-text);margin-top:4px">命中率</div>
-          </div>
-          <div style="background:var(--bg-secondary);border-radius:12px;padding:16px;text-align:center;">
-            <div style="font-size:24px;font-weight:700;color:var(--sub-text)">${totalPending}</div>
-            <div style="font-size:12px;color:var(--sub-text);margin-top:4px">待开奖</div>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
-          <div style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s ease;" data-action="showDetailedStatistics" data-type="zodiac">
-            <div class="card-header" style="padding:0;margin-bottom:12px;">
-              <h2 style="font-size:16px;">生肖预测</h2>
-              <div style="font-size:12px;color:var(--sub-text);margin-top:4px;">点击查看详情</div>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-size:14px;color:var(--sub-text)">命中</span>
-              <span style="font-size:16px;font-weight:600;color:var(--green)">${zodiacStats.hit}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-size:14px;color:var(--sub-text)">未中</span>
-              <span style="font-size:16px;font-weight:600;color:var(--danger)">${zodiacStats.miss}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-size:14px;color:var(--sub-text)">待开奖</span>
-              <span style="font-size:16px;font-weight:600;color:var(--sub-text)">${zodiacStats.pending}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-              <span style="font-size:14px;color:var(--sub-text)">命中率</span>
-              <span style="font-size:16px;font-weight:600;color:var(--primary)">${zodiacStats.hitRate}%</span>
-            </div>
-          </div>
-          <div style="background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s ease;" data-action="scrollToSelectedHistory">
-            <div class="card-header" style="padding:0;margin-bottom:12px;">
-              <h2 style="font-size:16px;">精选生肖</h2>
-              <div style="font-size:12px;color:var(--sub-text);margin-top:4px;">点击查看历史</div>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-size:14px;color:var(--sub-text)">命中</span>
-              <span style="font-size:16px;font-weight:600;color:var(--green)">${selectedZodiacStats.hit}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-size:14px;color:var(--sub-text)">未中</span>
-              <span style="font-size:16px;font-weight:600;color:var(--danger)">${selectedZodiacStats.miss}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-size:14px;color:var(--sub-text)">待开奖</span>
-              <span style="font-size:16px;font-weight:600;color:var(--sub-text)">${selectedZodiacStats.pending}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-              <span style="font-size:14px;color:var(--sub-text)">命中率</span>
-              <span style="font-size:16px;font-weight:600;color:var(--primary)">${selectedZodiacStats.hitRate}%</span>
-            </div>
-          </div>
-        </div>
-      `;
+      const allRecords = Storage.get('zodiacRecords', []);
+      
+      // 分离精选生肖和生肖预测记录
+      const selectedRecords = allRecords.filter(r => r.recordType === 'selected');
+      const zodiacRecords = allRecords.filter(r => !r.recordType || r.recordType !== 'selected');
+      
+      // 计算精选生肖统计
+      const selectedStats = record._calculateStats(selectedRecords);
+      
+      // 计算生肖预测统计
+      const predictionStats = record._calculateStats(zodiacRecords);
+      
+      // 更新精选生肖卡片
+      record._updateSummaryCard('selectedZodiac', {
+        total: selectedStats.total,
+        hit: selectedStats.hit,
+        miss: selectedStats.miss,
+        pending: selectedStats.pending,
+        rate: selectedStats.rate,
+        latest: selectedStats.latest
+      });
+      
+      // 更新生肖预测卡片
+      record._updateSummaryCard('zodiacPrediction', {
+        total: predictionStats.total,
+        hit: predictionStats.hit,
+        miss: predictionStats.miss,
+        pending: predictionStats.pending,
+        rate: predictionStats.rate,
+        latest: predictionStats.latest
+      });
     } catch (error) {
       console.error('加载预测统计失败:', error);
-      container.innerHTML = '<div class="error-tip">加载失败，请点击刷新重试</div>';
     }
+  },
+  
+  _calculateStats: (records) => {
+    let hit = 0, miss = 0, pending = 0;
+    let latestIssue = null;
+    let latestTime = null;
+    
+    records.forEach(rec => {
+      if (rec.checked) {
+        rec.matched === true ? hit++ : miss++;
+      } else {
+        pending++;
+      }
+      
+      // 获取最新期号
+      if (!latestIssue && rec.issue) {
+        latestIssue = rec.issue;
+        latestTime = rec.createdAt;
+      }
+    });
+    
+    const total = records.length;
+    const rate = (hit + miss) > 0 ? ((hit / (hit + miss)) * 100).toFixed(1) : '0.0';
+    
+    let latest = '暂无数据';
+    if (latestIssue) {
+      const dateStr = latestTime ? new Date(latestTime).toLocaleString('zh-CN', { 
+        month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' 
+      }) : '';
+      latest = `第${latestIssue}期 ${dateStr}`;
+    }
+    
+    return { total, hit, miss, pending, rate, latest };
+  },
+  
+  _updateSummaryCard: (prefix, stats) => {
+    const totalEl = document.getElementById(`${prefix}Total`);
+    const hitEl = document.getElementById(`${prefix}Hit`);
+    const missEl = document.getElementById(`${prefix}Miss`);
+    const pendingEl = document.getElementById(`${prefix}Pending`);
+    const rateEl = document.getElementById(`${prefix}Rate`);
+    const latestEl = document.getElementById(`${prefix}LatestContent`);
+    
+    if (totalEl) totalEl.textContent = stats.total;
+    if (hitEl) hitEl.textContent = stats.hit;
+    if (missEl) missEl.textContent = stats.miss;
+    if (pendingEl) pendingEl.textContent = stats.pending;
+    if (rateEl) rateEl.textContent = stats.rate + '%';
+    if (latestEl) latestEl.textContent = stats.latest;
   },
   _getCategoryStats: (type) => {
     const allRecords = Storage.get('zodiacRecords', []);
@@ -1395,6 +1394,36 @@ export const record = {
     record.renderZodiacPredictionHistory();
     record.renderSelectedZodiacHistory();
     record.renderPredictionStatistics();
+  },
+
+  // 显示精选生肖历史页面（点击精选生肖卡片时调用）
+  showSelectedZodiacHistory: () => {
+    // 滚动到精选生肖历史区域
+    const selectedHistorySection = document.getElementById('selectedZodiacHistorySection');
+    if (selectedHistorySection) {
+      selectedHistorySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      
+      // 如果历史列表为空，先刷新数据
+      const historyList = document.getElementById('selectedZodiacHistoryList');
+      if (historyList && historyList.querySelector('.empty-tip')) {
+        record.renderSelectedZodiacHistory();
+      }
+    }
+  },
+
+  // 显示生肖预测历史页面（点击生肖预测卡片时调用）
+  showZodiacPredictionHistory: () => {
+    // 滚动到生肖预测历史区域
+    const zodiacHistorySection = document.querySelector('.card:has(#zodiacPredictionHistoryList)');
+    if (zodiacHistorySection) {
+      zodiacHistorySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      
+      // 如果历史列表为空，先刷新数据
+      const historyList = document.getElementById('zodiacPredictionHistoryList');
+      if (historyList && historyList.querySelector('.empty-tip')) {
+        record.renderZodiacPredictionHistory();
+      }
+    }
   },
 
   // 显示详细统计弹窗

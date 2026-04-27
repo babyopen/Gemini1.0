@@ -5,8 +5,31 @@ import { StateManager } from '../../../state-manager.js';
 import { DataQuery } from '../../../data-query.js';
 import { PerformanceMonitor } from '../../../performance-monitor.js';
 
+const getTopEntry = (obj, count = 1) => 
+  Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, count);
+
+const _colorCache = new Map();
+const _elementCache = new Map();
+const _getColor = (number) => {
+  if (_colorCache.has(number)) return _colorCache.get(number);
+  const color = Object.keys(CONFIG.COLOR_MAP).find(c => CONFIG.COLOR_MAP[c].includes(number));
+  const result = color ? { cls: { '红': 'red', '蓝': 'blue', '绿': 'green' }[color] || 'red', name: color || '红' } : { cls: 'red', name: '红' };
+  _colorCache.set(number, result);
+  return result;
+};
+const _getElement = (number) => {
+  if (_elementCache.has(number)) return _elementCache.get(number);
+  const element = Object.keys(CONFIG.ELEMENT_MAP).find(e => CONFIG.ELEMENT_MAP[e].includes(number));
+  _elementCache.set(number, element || '金');
+  return element || '金';
+};
+
 export const analysisCalc = {
   _calcZodiacAnalysisCache: new Map(),
+
+  getTopEntry,
+
+  _colorCache, _elementCache,
 
   /**
    * 计算全维度分析
@@ -137,15 +160,15 @@ export const analysisCalc = {
       }
 
       // 热门排序
-      const hotSD = Object.entries(singleDouble).sort((a, b) => b[1] - a[1])[0];
-      const hotBS = Object.entries(bigSmall).sort((a, b) => b[1] - a[1])[0];
-      const hotHead = Object.entries(head).sort((a, b) => b[1] - a[1])[0];
-      const hotTail = Object.entries(tail).sort((a, b) => b[1] - a[1])[0];
-      const hotColor = Object.entries(color).sort((a, b) => b[1] - a[1])[0];
-      const hotWx = Object.entries(wuxing).sort((a, b) => b[1] - a[1])[0];
-      const hotZod = Object.entries(zodiac).sort((a, b) => b[1] - a[1]).slice(0, 3).map(i => i[0]).join('、');
-      const hotAni = Object.entries(animal).sort((a, b) => b[1] - a[1])[0];
-      const hotNum = Object.entries(numCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(i => i[0]).join(' ');
+      const hotSD = getTopEntry(singleDouble)[0];
+      const hotBS = getTopEntry(bigSmall)[0];
+      const hotHead = getTopEntry(head)[0];
+      const hotTail = getTopEntry(tail)[0];
+      const hotColor = getTopEntry(color)[0];
+      const hotWx = getTopEntry(wuxing)[0];
+      const hotZod = getTopEntry(zodiac, 3).map(i => i[0]).join('、');
+      const hotAni = getTopEntry(animal)[0];
+      const hotNum = getTopEntry(numCount, 5).map(i => i[0]).join(' ');
 
       return {
         total, singleDouble, bigSmall, range, head, tail, color, wuxing, animal, zodiac, numCount,
@@ -269,16 +292,16 @@ export const analysisCalc = {
         }
 
         // 热门排序
-        topZod = Object.entries(zodCount).sort((a, b) => b[1] - a[1]);
+        topZod = getTopEntry(zodCount);
         topTail = Array.from({ length: 10 }, (_, t) => ({
-          t, sum: Object.values(tailZodMap[t]).reduce((a, b) => a + b, 0)
+          t, sum: Object.values(tailZodMap[t] || {}).reduce((a, b) => a + b, 0)
         })).sort((a, b) => b.sum - a.sum);
         
         // 热门波色排序
-        topColor = Object.entries(colorCount).sort((a, b) => b[1] - a[1]);
+        topColor = getTopEntry(colorCount);
         
         // 热门头数排序
-        topHead = Object.entries(headCount).sort((a, b) => b[1] - a[1]);
+        topHead = getTopEntry(headCount);
       }
 
       // 遗漏期数计算
@@ -392,7 +415,7 @@ export const analysisCalc = {
       });
 
       // 按分数排序
-      const sortedZodiacs = Object.entries(zodiacScores).sort((a, b) => b[1] - a[1]);
+      const sortedZodiacs = getTopEntry(zodiacScores);
 
       return { list, total, avgExpect, zodCount, zodMiss, zodAvgMiss, tailZodMap, followMap, topZod, topTail, topColor, topHead, zodiacScores, zodiacDetails, sortedZodiacs };
     }, 'dataProcessing');
@@ -408,18 +431,19 @@ export const analysisCalc = {
     const zodArrRaw = (item.zodiac || ",,,,,,,,,,,").split(",");
     const zodArr = zodArrRaw.map(z => CONFIG.ANALYSIS.ZODIAC_TRAD_TO_SIMP[z] || z);
     const te = Math.max(0, Number(codeArr[6]));
+    const colorInfo = _getColor(te);
     
     return {
       te,
       tail: te % 10,
       head: Math.floor(te / 10),
-      wave: analysisCalc.getColor(te),
-      colorName: analysisCalc.getColorName(te),
+      wave: colorInfo.cls,
+      colorName: colorInfo.name,
       zod: zodArr[6] || "-",
       odd: te % 2 === 1,
       big: te >= 25,
       animal: CONFIG.ANALYSIS.HOME_ZODIAC.includes(zodArr[6]) ? "家禽" : "野兽",
-      wuxing: analysisCalc.getWuxing(te),
+      wuxing: _getElement(te),
       fullZodArr: zodArr
     };
   },
@@ -429,31 +453,21 @@ export const analysisCalc = {
    * @param {number} number - 号码
    * @returns {string} 颜色类名
    */
-  getColor: (number) => {
-    const color = Object.keys(CONFIG.COLOR_MAP).find(c => CONFIG.COLOR_MAP[c].includes(number));
-    const colorMap = { '红': 'red', '蓝': 'blue', '绿': 'green' };
-    return colorMap[color] || 'red';
-  },
+  getColor: (number) => _getColor(number).cls,
   
   /**
    * 获取号码对应的颜色名称
    * @param {number} number - 号码
    * @returns {string} 颜色名称
    */
-  getColorName: (number) => {
-    const color = Object.keys(CONFIG.COLOR_MAP).find(c => CONFIG.COLOR_MAP[c].includes(number));
-    return color || '红';
-  },
+  getColorName: (number) => _getColor(number).name,
   
   /**
    * 获取号码对应的五行
    * @param {number} number - 号码
    * @returns {string} 五行名称
    */
-  getWuxing: (number) => {
-    const element = Object.keys(CONFIG.ELEMENT_MAP).find(e => CONFIG.ELEMENT_MAP[e].includes(number));
-    return element || '金';
-  },
+  getWuxing: (number) => _getElement(number),
 
   /**
    * 获取生肖热度等级
@@ -520,11 +534,7 @@ export const analysisCalc = {
    * @returns {string} HTML字符串
    */
   buildBall: (num, color, zodiac) => {
-    return `
-    <div class="ball-item">
-      <div class="ball ${color}">${num}</div>
-      <div class="ball-zodiac">${zodiac}</div>
-    </div>`;
+    return `<div class="ball-item"><div class="ball ${color}">${num}</div><div class="ball-zodiac">${zodiac}</div></div>`;
   },
 
   /**

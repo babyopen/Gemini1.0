@@ -1454,3 +1454,91 @@ input[type="checkbox"]{
   color: var(--danger);
   font-weight: 500;
 }
+
+/* 预测统计卡片样式（从Going 1.0迁移） */
+.selected-zodiac-summary-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.selected-zodiac-summary-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.summary-card-item {
+  text-align: center;
+  flex: 1;
+}
+
+.summary-card-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.summary-card-label {
+  font-size: 11px;
+  color: var(--sub-text);
+  margin-top: 4px;
+}
+
+.summary-card-latest {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.summary-card-latest-content {
+  font-size: 12px;
+  color: var(--sub-text);
+}
+
+.summary-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--sub-text);
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.summary-card-rate {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.summary-card-arrow {
+  color: var(--primary);
+}
+
+/* 响应式适配 */
+@media (max-width: 375px) {
+  .selected-zodiac-summary-card {
+    padding: 12px;
+  }
+  
+  .summary-card-value {
+    font-size: 18px;
+  }
+  
+  .summary-card-label {
+    font-size: 10px;
+  }
+}

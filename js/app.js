@@ -14,234 +14,72 @@ import { PerformanceMonitor } from './performance-monitor.js';
 import { ErrorHandler } from './error-handler.js';
 import { Router } from './router.js';
 import { core } from './business/core.js';
+import { DOM } from './dom.js';
 
 /**
  * 应用初始化
  */
 async function initApp() {
+  PerformanceMonitor.init();
+  DOM.init();
+  
+  Render.buildZodiacCycle();
+  Render.buildNumList();
+  DataQuery.init();
+  Render.renderZodiacTags();
+  Render.renderExcludeGrid();
+  
   try {
-    // 初始化性能监控
-    PerformanceMonitor.init();
-    
-    // 1. 生成生肖数据
-    Render.buildZodiacCycle();
-    // 2. 生成号码基础数据
-    Render.buildNumList();
-    // 3. 初始化数据查询模块（打通所有数据关联）
-    DataQuery.init();
-    // 4. 渲染生肖标签
-    Render.renderZodiacTags();
-    // 5. 渲染排除号码网格
-    Render.renderExcludeGrid();
-    // 6. 加载本地存储的方案
     Storage.loadSavedFilters();
-    // 7. 加载本地存储的收藏
     Storage.loadFavorites();
-    // 8. 渲染方案列表
     Render.renderFilterList();
-    // 9. 尝试从缓存加载历史数据
-    const cache = Storage.loadHistoryCache();
-    let hasValidCache = false;
+    Render.renderResult();
+  } catch(e) { console.warn('初始UI渲染失败:', e); }
+  
+  Utils.initSwipeHandlers();
+  EventBinder.init();
+  Router.init();
+  
+  const cache = Storage.loadHistoryCache();
+  
+  setTimeout(() => {
     if(cache.data && cache.data.length > 0) {
-      const newAnalysis = { 
-        ...StateManager._state.analysis, 
-        historyData: cache.data 
-      };
-      StateManager.setState({ analysis: newAnalysis }, false);
-      hasValidCache = true;
-      
-      // 有缓存数据时，立即渲染一次
-      try {
-        Business.renderLatest(cache.data[0]);
-      } catch(e) { 
-        ErrorHandler.handleError({
-          error: e,
-          type: ErrorHandler.ErrorType.BUSINESS,
-          level: ErrorHandler.ErrorLevel.WARN,
-          message: 'renderLatest 执行失败',
-          context: { function: 'renderLatest' }
-        });
-      }
-      try {
-        Business.renderHistory();
-      } catch(e) { 
-        ErrorHandler.handleError({
-          error: e,
-          type: ErrorHandler.ErrorType.BUSINESS,
-          level: ErrorHandler.ErrorLevel.WARN,
-          message: 'renderHistory 执行失败',
-          context: { function: 'renderHistory' }
-        });
-      }
-      try {
-        Business.renderFullAnalysis();
-      } catch(e) { 
-        ErrorHandler.handleError({
-          error: e,
-          type: ErrorHandler.ErrorType.BUSINESS,
-          level: ErrorHandler.ErrorLevel.WARN,
-          message: 'renderFullAnalysis 执行失败',
-          context: { function: 'renderFullAnalysis' }
-        });
-      }
-      try {
-        Business.renderZodiacAnalysis();
-      } catch(e) { 
-        ErrorHandler.handleError({
-          error: e,
-          type: ErrorHandler.ErrorType.BUSINESS,
-          level: ErrorHandler.ErrorLevel.WARN,
-          message: 'renderZodiacAnalysis 执行失败',
-          context: { function: 'renderZodiacAnalysis' }
-        });
-      }
-      try {
-        Business.updateHotColdStatus();
-      } catch(e) { 
-        ErrorHandler.handleError({
-          error: e,
-          type: ErrorHandler.ErrorType.BUSINESS,
-          level: ErrorHandler.ErrorLevel.WARN,
-          message: 'updateHotColdStatus 执行失败',
-          context: { function: 'updateHotColdStatus' }
-        });
-      }
+      StateManager.setState({ analysis: { ...StateManager._state.analysis, historyData: cache.data } }, false);
+      try { Business.renderLatest(cache.data[0]); } catch(e) {}
+      try { Business.renderHistory(); } catch(e) {}
+      try { Business.renderFullAnalysis(); } catch(e) {}
+      try { Business.renderZodiacAnalysis(); } catch(e) {}
+      try { Business.updateHotColdStatus(); } catch(e) {}
+      Business.silentRefreshHistory();
+    } else {
+      Business.refreshHistory(true);
     }
-    
-    // 无论是否有缓存，都在后台静默刷新获取最新数据
-    // 如果有缓存，刷新后如果数据有变化会自动更新
-    setTimeout(() => {
-      try {
-        if(hasValidCache) {
-          Business.silentRefreshHistory();
-        } else {
-          // 没有缓存时，直接正常加载
-          Business.refreshHistory(true);
-        }
-      } catch(e) { 
-        ErrorHandler.handleError({
-          error: e,
-          type: ErrorHandler.ErrorType.BUSINESS,
-          level: ErrorHandler.ErrorLevel.WARN,
-          message: '刷新历史数据失败',
-          context: { function: 'refreshHistory' }
-        });
-      }
-    }, 1000);
-    
-
-
-    // 12. 初始化滑动处理器
-    Utils.initSwipeHandlers();
-    // 13. 初始化事件绑定
-    EventBinder.init();
-    // 14. 初始化路由
-    Router.init();
-    // 14. 启动分析页面倒计时和自动刷新检查
-    try {
-      Business.startCountdown();
-    } catch(e) { 
-      ErrorHandler.handleError({
-        error: e,
-        type: ErrorHandler.ErrorType.BUSINESS,
-        level: ErrorHandler.ErrorLevel.WARN,
-        message: 'startCountdown 执行失败',
-        context: { function: 'startCountdown' }
-      });
+  }, 100);
+  
+  setTimeout(() => {
+    try { Business.startCountdown(); } catch(e) {}
+    try { Business.checkDrawTimeLoop(); } catch(e) {}
+  }, 300);
+  
+  setTimeout(() => {
+    try { Business.startScheduledDataFetch(); } catch(e) {}
+    try { Business.initAnalysisPage(); } catch(e) {}
+    try { Business.record.init(); } catch(e) {}
+  }, 600);
+  
+  const bottomNav = document.querySelector('.bottom-nav');
+  if(bottomNav) bottomNav.classList.add('needs-space');
+  
+  Render.hideLoading();
+  
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible') {
+      setTimeout(() => { try { Business.silentRefreshHistory(); } catch(e) {} }, 300);
     }
-    try {
-      Business.checkDrawTimeLoop();
-    } catch(e) { 
-      ErrorHandler.handleError({
-        error: e,
-        type: ErrorHandler.ErrorType.BUSINESS,
-        level: ErrorHandler.ErrorLevel.WARN,
-        message: 'checkDrawTimeLoop 执行失败',
-        context: { function: 'checkDrawTimeLoop' }
-      });
-    }
-    // 14.1 启动定时获取开奖数据服务
-    try {
-      Business.startScheduledDataFetch();
-    } catch(e) { 
-      ErrorHandler.handleError({
-        error: e,
-        type: ErrorHandler.ErrorType.BUSINESS,
-        level: ErrorHandler.ErrorLevel.WARN,
-        message: 'startScheduledDataFetch 执行失败',
-        context: { function: 'startScheduledDataFetch' }
-      });
-    }
-    // 14.2 初始化分析页面
-    try {
-      Business.initAnalysisPage();
-    } catch(e) { 
-      ErrorHandler.handleError({
-        error: e,
-        type: ErrorHandler.ErrorType.BUSINESS,
-        level: ErrorHandler.ErrorLevel.WARN,
-        message: 'initAnalysisPage 执行失败',
-        context: { function: 'initAnalysisPage' }
-      });
-    }
-    // 14.3 初始化记录页面
-    try {
-      Business.record.init();
-    } catch(e) { 
-      ErrorHandler.handleError({
-        error: e,
-        type: ErrorHandler.ErrorType.BUSINESS,
-        level: ErrorHandler.ErrorLevel.WARN,
-        message: 'record.init 执行失败',
-        context: { function: 'record.init' }
-      });
-    }
-    // 14.2 设置底部导航栏初始样式（筛选页面需要给快捷导航让位置）
-    const bottomNav = document.querySelector('.bottom-nav');
-    if(bottomNav) {
-      bottomNav.classList.add('needs-space');
-    }
-    
-
-    
-    // 16. 隐藏加载遮罩
-    Render.hideLoading();
-    
-    // 17. 添加页面可见性监听器：页面从后台切换回来时刷新数据
-    document.addEventListener('visibilitychange', () => {
-      if(document.visibilityState === 'visible') {
-        // 页面变为可见时，静默刷新数据
-        setTimeout(() => {
-          try {
-            Business.silentRefreshHistory();
-          } catch(e) { 
-            ErrorHandler.handleError({
-              error: e,
-              type: ErrorHandler.ErrorType.BUSINESS,
-              level: ErrorHandler.ErrorLevel.WARN,
-              message: '静默刷新数据失败',
-              context: { function: 'silentRefreshHistory' }
-            });
-          }
-        }, 500);
-      }
-    });
-    
-
-    
-    // 应用初始化完成
-    console.log('应用初始化完成');
-    PerformanceMonitor.logMetrics();
-  } catch(e) {
-    ErrorHandler.handleError({
-      error: e,
-      type: ErrorHandler.ErrorType.SYSTEM,
-      level: ErrorHandler.ErrorLevel.CRITICAL,
-      message: '应用初始化失败',
-      context: { function: 'initApp' }
-    });
-    Render.hideLoading();
-  }
+  });
+  
+  console.log('应用初始化完成');
+  PerformanceMonitor.logMetrics();
 }
 
 // 为了兼容原 HTML 中的内联 onclick，将 Business 挂载到 window
@@ -249,19 +87,11 @@ window.Business = Business;
 
 // 导出core模块的方法到Business对象
 Object.assign(Business, {
-  // 导航相关
-  switchBottomNav: core.switchBottomNav,
-  toggleQuickNav: core.toggleQuickNav,
-  scrollToModule: core.scrollToModule,
-  
-  // 排除号码相关
   toggleExclude: core.toggleExclude,
   invertExclude: core.invertExclude,
   undoExclude: core.undoExclude,
   clearExclude: core.clearExclude,
   batchExcludePrompt: core.batchExcludePrompt,
-  
-  // 方案管理相关
   saveFilterPrompt: core.saveFilterPrompt,
   loadFilter: core.loadFilter,
   renameFilter: core.renameFilter,
@@ -273,8 +103,9 @@ Object.assign(Business, {
   renameFavorite: core.renameFavorite,
   copyFavorite: core.copyFavorite,
   toggleShowAllFilters: core.toggleShowAllFilters,
-  
-  // 其他功能
+  switchBottomNav: core.switchBottomNav,
+  toggleQuickNav: core.toggleQuickNav,
+  scrollToModule: core.scrollToModule,
   copyHotNumbers: core.copyHotNumbers,
   copyZodiacNumbers: core.copyZodiacNumbers
 });
@@ -766,6 +597,7 @@ if (!Business.favoriteFilter) {
       favorites.push(filterItem);
       Storage.set('favorites', favorites);
       StateManager.setState({ favorites: favorites });
+      window.dispatchEvent(new StorageEvent('storage', { key: 'favorites' }));
     } catch(e) {
       console.error('收藏方案失败:', e);
     }
