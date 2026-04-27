@@ -687,27 +687,43 @@ export const analysisRender = {
                     
                     // 保存ML预测历史
                     const { Storage } = await import('../../../storage.js');
+                    const { mlPredict } = await import('../../ml-predict.js');
                     
                     // ✅ 获取下一期期号（统一使用IssueManager）
                     const nextIssueObj = IssueManager.getNextIssue();
                     const issue = nextIssueObj ? nextIssueObj.full : '2026100';
                     
-                    console.log('[ML] 💾 保存预测 - 期号:', issue, '(下一期)');
+                    // ✅ 区分训练前和训练后的预测
+                    const isTrained = mlPredict.modelReady && !mlPredict.isTraining;
+                    const predictionType = isTrained ? 'after-train' : 'before-train';
+                    const typeLabel = isTrained ? '已训练' : '未训练';
+                    
+                    console.log('[ML] 💾 保存预测 - 期号:', issue, '- 类型:', typeLabel);
                     
                     const mlRecord = {
                       issue: issue,
                       predictions: predictions,
                       modelVersion: '1.0',
                       inputFeatures: '历史开奖数据',
+                      predictionType: predictionType,
+                      isTrained: isTrained,
                       createdAt: new Date().toISOString()
                     };
                     
                     // 获取现有记录
                     const existingRecords = Storage.get('mlPredictionRecords', []);
+                    
+                    // ✅ 使用复合键（期号+类型）去重：同一期号同一类型只保留最新一条
+                    const recordKey = `${issue}_${predictionType}`;
+                    const filteredRecords = existingRecords.filter(rec => {
+                      const recKey = `${rec.issue}_${rec.predictionType}`;
+                      return recKey !== recordKey;
+                    });
+                    
                     // 添加新记录到开头（时间倒序）
-                    existingRecords.unshift(mlRecord);
+                    filteredRecords.unshift(mlRecord);
                     // 限制历史记录数量
-                    const limitedRecords = existingRecords.slice(0, 100);
+                    const limitedRecords = filteredRecords.slice(0, 100);
                     // 保存到localStorage
                     Storage.set('mlPredictionRecords', limitedRecords);
                     

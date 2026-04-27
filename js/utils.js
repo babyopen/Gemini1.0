@@ -192,6 +192,87 @@ export const Utils = {
       }
     },
 
+    // ✅ 显示删除按钮
+    _showDeleteButton: (item, deleteCallback) => {
+      if (!item) return;
+      
+      // 移除已存在的删除按钮
+      const existingBtn = item.querySelector('.swipe-delete-btn');
+      if (existingBtn) {
+        existingBtn.remove();
+      }
+      
+      // 创建删除按钮
+      const deleteBtn = document.createElement('div');
+      deleteBtn.className = 'swipe-delete-btn';
+      deleteBtn.style.cssText = `
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 80px;
+        background: linear-gradient(to left, #ff3b30, #ff453a);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-out;
+        z-index: 10;
+        border-radius: 0 8px 8px 0;
+        box-shadow: -2px 0 8px rgba(255, 59, 48, 0.3);
+      `;
+      deleteBtn.innerHTML = '🗑️ 删除';
+      
+      // 点击删除按钮
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        // ✅ 显示自定义确认弹窗
+        Utils._showDeleteConfirmDialog(item, deleteCallback);
+      };
+      
+      item.appendChild(deleteBtn);
+      
+      // 动画显示删除按钮
+      requestAnimationFrame(() => {
+        deleteBtn.style.transform = 'translateX(0)';
+      });
+      
+      // 点击其他地方关闭删除按钮
+      const closeHandler = (e) => {
+        if (!item.contains(e.target) || e.target === item) {
+          Utils._hideDeleteButton(item);
+          document.removeEventListener('click', closeHandler);
+        }
+      };
+      
+      setTimeout(() => {
+        document.addEventListener('click', closeHandler);
+      }, 100);
+    },
+
+    // ✅ 隐藏删除按钮
+    _hideDeleteButton: (item) => {
+      if (!item) return;
+      
+      const deleteBtn = item.querySelector('.swipe-delete-btn');
+      if (deleteBtn) {
+        deleteBtn.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (deleteBtn.parentNode) {
+            deleteBtn.remove();
+          }
+        }, 300);
+      }
+      
+      // 恢复内容位置
+      item.style.transform = 'translateX(0)';
+      item.style.transition = 'transform 0.3s ease-out';
+    },
+
     // 执行删除操作
     _performDelete: async (item, deleteCallback) => {
       try {
@@ -228,6 +309,119 @@ export const Utils = {
       } catch (e) {
         console.error('[Utils] 删除失败', e);
         return false;
+      }
+    },
+    
+    // ✅ 显示删除确认弹窗
+    _showDeleteConfirmDialog: (item, deleteCallback) => {
+      // 创建弹窗
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      `;
+      
+      const dialog = document.createElement('div');
+      dialog.style.cssText = `
+        background: var(--card);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 90%;
+        width: 320px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transform: scale(0.9);
+        transition: transform 0.2s ease;
+      `;
+      
+      dialog.innerHTML = `
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
+          <div style="font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 8px;">确认删除</div>
+          <div style="font-size: 14px; color: var(--sub-text);">删除后将无法恢复，确定要删除吗？</div>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <button class="cancel-delete-btn" style="flex: 1; padding: 12px; border: none; border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; cursor: pointer; transition: all 0.2s;">
+            取消
+          </button>
+          <button class="confirm-delete-btn" style="flex: 1; padding: 12px; border: none; border-radius: 8px; background: #ff3b30; color: white; font-size: 14px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+            确定删除
+          </button>
+        </div>
+      `;
+      
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+      
+      // 动画显示
+      requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
+        dialog.style.transform = 'scale(1)';
+      });
+      
+      // 取消按钮
+      const cancelBtn = dialog.querySelector('.cancel-delete-btn');
+      cancelBtn.onmouseenter = () => {
+        cancelBtn.style.background = 'var(--border)';
+      };
+      cancelBtn.onmouseleave = () => {
+        cancelBtn.style.background = 'var(--bg)';
+      };
+      cancelBtn.onclick = () => {
+        Utils._closeDeleteDialog(overlay);
+        Utils._hideDeleteButton(item);
+        if (typeof Toast !== 'undefined') {
+          Toast.show('已取消删除');
+        }
+      };
+      
+      // 确认按钮
+      const confirmBtn = dialog.querySelector('.confirm-delete-btn');
+      confirmBtn.onmouseenter = () => {
+        confirmBtn.style.background = '#ff2419';
+      };
+      confirmBtn.onmouseleave = () => {
+        confirmBtn.style.background = '#ff3b30';
+      };
+      confirmBtn.onclick = () => {
+        Utils._closeDeleteDialog(overlay);
+        Utils._performDelete(item, deleteCallback);
+      };
+      
+      // 点击背景关闭
+      overlay.onclick = (e) => {
+        if (e.target === overlay) {
+          Utils._closeDeleteDialog(overlay);
+          Utils._hideDeleteButton(item);
+          if (typeof Toast !== 'undefined') {
+            Toast.show('已取消删除');
+          }
+        }
+      };
+    },
+    
+    // ✅ 关闭删除弹窗
+    _closeDeleteDialog: (overlay) => {
+      if (!overlay) return;
+      
+      const dialog = overlay.querySelector('div:last-child');
+      if (dialog) {
+        overlay.style.opacity = '0';
+        dialog.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          if (overlay.parentNode) {
+            overlay.remove();
+          }
+        }, 200);
       }
     },
 
@@ -308,12 +502,14 @@ export const Utils = {
       const key = `${prefix}_${idx}`;
       const item = e.currentTarget;
       
-      item.style.transform = 'translateX(0)';
-      item.style.transition = 'transform 0.3s ease-out';
+      // 隐藏删除指示器
+      this._hideDeleteIndicator(item);
       
       if (!this._isHorizontal[key] || 
           !this._isLeftSwipe[key]) {
-        this._hideDeleteIndicator(item);
+        // 不是向左滑动，恢复原位
+        item.style.transform = 'translateX(0)';
+        item.style.transition = 'transform 0.3s ease-out';
         this._cleanup(key);
         return;
       }
@@ -325,16 +521,14 @@ export const Utils = {
       const isLongSwipe = deltaX <= -this._threshold;
       
       if (isQuickSwipe || isLongSwipe) {
-        if (confirm('确定要删除这条记录吗？')) {
-          this._performDelete(item, deleteCallback);
-        } else {
-          if (typeof Toast !== 'undefined') {
-            Toast.show('已取消删除');
-          }
-        }
+        // ✅ 滑动成功，显示删除按钮而不是直接弹出确认框
+        this._showDeleteButton(item, deleteCallback);
+      } else {
+        // 滑动不够，恢复原位
+        item.style.transform = 'translateX(0)';
+        item.style.transition = 'transform 0.3s ease-out';
       }
       
-      this._hideDeleteIndicator(item);
       this._cleanup(key);
     },
 

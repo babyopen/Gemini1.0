@@ -520,7 +520,7 @@ export const record = {
       
       // 计算 ML 预测统计
       const mlRecords = Storage.get('mlPredictionRecords', []);
-      const mlStats = record._calculateStats(mlRecords);
+      const mlStats = record._calculateMLPredictionStats(mlRecords);
       
       // 更新 ML 预测卡片
       record._updateSummaryCard('mlPrediction', {
@@ -535,7 +535,7 @@ export const record = {
       
       // 计算特码热门统计
       const hotRecords = Storage.get('hotNumbersRecords', []);
-      const hotStats = record._calculateStats(hotRecords);
+      const hotStats = record._calculateHotNumbersStats(hotRecords);
       
       // 更新特码热门卡片
       record._updateSummaryCard('hotNumbers', {
@@ -545,12 +545,12 @@ export const record = {
         pending: hotStats.pending,
         rate: hotStats.rate,
         latest: hotStats.latest,
-        latestZodiacs: hotStats.latestZodiacs
+        latestNumbers: hotStats.latestNumbers
       });
       
       // 计算精选特码统计
       const specialRecords = Storage.get('numberRecords', []);
-      const specialStats = record._calculateStats(specialRecords);
+      const specialStats = record._calculateSpecialStats(specialRecords);
       
       // 更新精选特码卡片
       record._updateSummaryCard('special', {
@@ -560,7 +560,7 @@ export const record = {
         pending: specialStats.pending,
         rate: specialStats.rate,
         latest: specialStats.latest,
-        latestZodiacs: specialStats.latestZodiacs
+        latestZodiacs: specialStats.latestNumbers
       });
     } catch (error) {
       console.error('加载预测统计失败:', error);
@@ -603,6 +603,129 @@ export const record = {
     return { total, hit, miss, pending, rate, latest, latestZodiacs: latestZodiacsStr };
   },
   
+  _calculateSpecialStats: (records) => {
+    let hit = 0, miss = 0, pending = 0;
+    let latestIssue = null;
+    let latestTime = null;
+    let latestNumbers = null;
+    
+    records.forEach(rec => {
+      if (rec.checked) {
+        rec.matched === true ? hit++ : miss++;
+      } else {
+        pending++;
+      }
+      
+      if (!latestIssue && rec.issue) {
+        latestIssue = rec.issue;
+        latestTime = rec.createdAt;
+        latestNumbers = Array.isArray(rec.numbers) ? rec.numbers : [];
+      }
+    });
+    
+    const total = records.length;
+    const rate = (hit + miss) > 0 ? ((hit / (hit + miss)) * 100).toFixed(1) : '0.0';
+    
+    let latest = '暂无数据';
+    if (latestIssue) {
+      const dateStr = latestTime ? new Date(latestTime).toLocaleString('zh-CN', { 
+        month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' 
+      }) : '';
+      latest = `第${latestIssue}期 ${dateStr}`;
+    }
+    
+    const latestNumbersStr = latestNumbers ? latestNumbers.map(n => {
+      if (typeof n === 'object' && n !== null) {
+        return n.number || n.num || '';
+      }
+      return n;
+    }).join(' ') : '';
+    
+    return { total, hit, miss, pending, rate, latest, latestNumbers: latestNumbersStr };
+  },
+  
+  _calculateHotNumbersStats: (records) => {
+    let hit = 0, miss = 0, pending = 0;
+    let latestIssue = null;
+    let latestTime = null;
+    let latestNumbers = null;
+    
+    records.forEach(rec => {
+      if (rec.checked) {
+        rec.matched === true ? hit++ : miss++;
+      } else {
+        pending++;
+      }
+      
+      if (!latestIssue && rec.issue) {
+        latestIssue = rec.issue;
+        latestTime = rec.createdAt;
+        latestNumbers = Array.isArray(rec.numbers) ? rec.numbers : [];
+      }
+    });
+    
+    const total = records.length;
+    const rate = (hit + miss) > 0 ? ((hit / (hit + miss)) * 100).toFixed(1) : '0.0';
+    
+    let latest = '暂无数据';
+    if (latestIssue) {
+      const dateStr = latestTime ? new Date(latestTime).toLocaleString('zh-CN', { 
+        month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' 
+      }) : '';
+      latest = `第${latestIssue}期 ${dateStr}`;
+    }
+    
+    const latestNumbersStr = latestNumbers ? latestNumbers.map(n => {
+      if (typeof n === 'object' && n !== null) {
+        return n.number || n.num || '';
+      }
+      return n;
+    }).join(' ') : '';
+    
+    return { total, hit, miss, pending, rate, latest, latestNumbers: latestNumbersStr };
+  },
+  
+  _calculateMLPredictionStats: (records) => {
+    let hit = 0, miss = 0, pending = 0;
+    let latestIssue = null;
+    let latestTime = null;
+    let latestPredictions = null;
+    let latestIsTrained = false;
+    
+    records.forEach(rec => {
+      if (rec.checked) {
+        rec.matched === true ? hit++ : miss++;
+      } else {
+        pending++;
+      }
+      
+      if (!latestIssue && rec.issue) {
+        latestIssue = rec.issue;
+        latestTime = rec.createdAt;
+        latestPredictions = Array.isArray(rec.predictions) ? rec.predictions : [];
+        latestIsTrained = rec.isTrained || false;
+      }
+    });
+    
+    const total = records.length;
+    const rate = (hit + miss) > 0 ? ((hit / (hit + miss)) * 100).toFixed(1) : '0.0';
+    
+    let latest = '暂无数据';
+    if (latestIssue) {
+      const dateStr = latestTime ? new Date(latestTime).toLocaleString('zh-CN', { 
+        month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' 
+      }) : '';
+      latest = `第${latestIssue}期 ${dateStr}`;
+    }
+    
+    const latestPredictionsStr = latestPredictions ? latestPredictions.map(z => z.split('(')[0].trim()).join(' ') : '';
+    
+    // ✅ 添加训练标识到显示
+    const latestWithType = latestIsTrained ? `🤖 ${latestPredictionsStr}` : `📊 ${latestPredictionsStr}`;
+    
+    return { total, hit, miss, pending, rate, latest, latestZodiacs: latestWithType };
+  },
+  
   _updateSummaryCard: (prefix, stats) => {
     const totalEl = document.getElementById(`${prefix}Total`);
     const hitEl = document.getElementById(`${prefix}Hit`);
@@ -619,9 +742,26 @@ export const record = {
     if (rateEl) rateEl.textContent = stats.rate + '%';
     if (latestEl) latestEl.textContent = stats.latest;
     if (latestZodiacsEl) {
-      if (stats.latestZodiacs) {
-        const zodiacsArr = stats.latestZodiacs.split(' ');
-        latestZodiacsEl.innerHTML = zodiacsArr.map(z => `<span class="zodiac-tag">${z}</span>`).join('');
+      if (stats.latestNumbers) {
+        // 精选特码和特码热门：显示号码
+        const numbersArr = stats.latestNumbers.split(' ').filter(n => n.trim());
+        latestZodiacsEl.innerHTML = numbersArr.map(n => `<span class="history-tag">${n}</span>`).join('');
+      } else if (stats.latestZodiacs) {
+        // 生肖预测和ML预测：显示生肖（可能包含emoji前缀）
+        const zodiacsStr = stats.latestZodiacs;
+        // 检查是否包含emoji前缀
+        const hasEmoji = zodiacsStr.match(/^[🤖📊]\s/);
+        if (hasEmoji) {
+          // 提取emoji和剩余的生肖
+          const emoji = hasEmoji[0];
+          const zodiacsPart = zodiacsStr.substring(emoji.length);
+          const zodiacsArr = zodiacsPart.split(' ').filter(z => z.trim());
+          latestZodiacsEl.innerHTML = emoji + zodiacsArr.map(z => `<span class="zodiac-tag">${z}</span>`).join(' ');
+        } else {
+          // 没有emoji，直接显示
+          const zodiacsArr = zodiacsStr.split(' ').filter(z => z.trim());
+          latestZodiacsEl.innerHTML = zodiacsArr.map(z => `<span class="zodiac-tag">${z}</span>`).join(' ');
+        }
       } else {
         latestZodiacsEl.innerHTML = '';
       }
@@ -788,6 +928,12 @@ export const record = {
               ${actualTagHtml ? `<div class="history-tags-actual">${actualTagHtml}</div>` : ''}
             </div>
           `;
+          
+          // ✅ 绑定滑动删除事件
+          record._bindSwipeDeleteToItem(item, idx, 'selectedZodiac', () => {
+            record._deleteSelectedZodiacRecord(idx);
+          });
+          
           fragment.appendChild(item);
         } catch (error) {
           console.error('渲染精选生肖历史详情项失败:', error);
@@ -854,9 +1000,9 @@ export const record = {
           const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', {
             month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
           }) : '';
-          const zodiacs = Array.isArray(rec.zodiacs) ? rec.zodiacs : [];
+          const predictions = Array.isArray(rec.predictions) ? rec.predictions : [];
 
-          const predictedTagsHtml = zodiacs.map(z => {
+          const predictedTagsHtml = predictions.map(z => {
             const zodiacName = z.split('(')[0].trim();
             const isMatched = rec.checked && rec.matched && rec.actualZodiac === zodiacName;
             const className = isMatched ? 'history-tag history-tag-matched' : 'history-tag';
@@ -869,19 +1015,28 @@ export const record = {
             actualTagHtml = `<div class="${actualClass}" data-type="actual">${rec.actualZodiac}</div>`;
           }
 
+          // ✅ 显示训练前后标识
+          const typeLabel = rec.isTrained ? '<span style="color:#10b981;">🤖 已训练</span>' : '<span style="color:#f59e0b;">📊 未训练</span>';
+
           const item = document.createElement('div');
           item.className = 'history-item';
           item.innerHTML = `
             <div class="history-header">
-              <div class="history-nums">第${rec.issue || ''}期 ML预测</div>
+              <div class="history-nums">第${rec.issue || ''}期 ML预测 ${typeLabel}</div>
               <div class="history-time">${dateStr}</div>
             </div>
             <div class="history-tags">
               <div class="history-tags-predicted">${predictedTagsHtml}</div>
               ${actualTagHtml ? `<div class="history-tags-actual">${actualTagHtml}</div>` : ''}
             </div>
-            ${rec.modelVersion ? `<div class="history-meta" style="font-size: 12px; color: #999; margin-top: 5px;">模型版本: ${rec.modelVersion} | 特征: ${rec.features || '历史开奖数据'}</div>` : ''}
+            ${rec.modelVersion ? `<div class="history-meta" style="font-size: 12px; color: #999; margin-top: 5px;">模型版本: ${rec.modelVersion} | 特征: ${rec.inputFeatures || '历史开奖数据'}</div>` : ''}
           `;
+          
+          // ✅ 绑定滑动删除事件
+          record._bindSwipeDeleteToItem(item, idx, 'mlPrediction', () => {
+            record._deleteMLPredictionRecord(rec);
+          });
+          
           fragment.appendChild(item);
         } catch (error) {
           console.error('渲染ML预测历史详情项失败:', error);
@@ -924,10 +1079,10 @@ export const record = {
       }
 
       const fragment = document.createDocumentFragment();
-      zodiacRecords.forEach((rec) => {
+      zodiacRecords.forEach((rec, idx) => {
         try {
           const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', {
-            month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+            month: '2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'
           }) : '';
           const zodiacs = Array.isArray(rec.zodiacs) ? rec.zodiacs : [];
 
@@ -956,6 +1111,12 @@ export const record = {
               ${actualTagHtml ? `<div class="history-tags-actual">${actualTagHtml}</div>` : ''}
             </div>
           `;
+          
+          // ✅ 绑定滑动删除事件
+          record._bindSwipeDeleteToItem(item, idx, 'zodiacPrediction', () => {
+            record._deleteZodiacPredictionRecord(rec.issue);
+          });
+          
           fragment.appendChild(item);
         } catch (error) {
           console.error('渲染生肖预测历史详情项失败:', error);
@@ -997,7 +1158,7 @@ export const record = {
       }
 
       const fragment = document.createDocumentFragment();
-      hotRecords.forEach((rec) => {
+      hotRecords.forEach((rec, idx) => {
         try {
           const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', {
             month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
@@ -1027,6 +1188,12 @@ export const record = {
               ${actualTagHtml ? `<div class="history-tags-actual">${actualTagHtml}</div>` : ''}
             </div>
           `;
+          
+          // ✅ 绑定滑动删除事件
+          record._bindSwipeDeleteToItem(item, idx, 'hotNumbers', () => {
+            record._deleteHotNumbersRecord(rec.issue);
+          });
+          
           fragment.appendChild(item);
         } catch (error) {
           console.error('渲染特码热门历史详情项失败:', error);
@@ -1068,7 +1235,7 @@ export const record = {
       }
 
       const fragment = document.createDocumentFragment();
-      specialRecords.forEach((rec) => {
+      specialRecords.forEach((rec, idx) => {
         try {
           const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', {
             month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
@@ -1105,6 +1272,12 @@ export const record = {
               <span>🎯 ${numCount}个</span>
             </div>
           `;
+          
+          // ✅ 绑定滑动删除事件
+          record._bindSwipeDeleteToItem(item, idx, 'special', () => {
+            record._deleteSpecialRecord(rec);
+          });
+          
           fragment.appendChild(item);
         } catch (error) {
           console.error('渲染精选特码历史详情项失败:', error);
