@@ -537,18 +537,13 @@ export const prediction = {
     const result = new Map();
     
     periods.forEach((period, periodIndex) => {
-      const periodData = analysisCalc.calcZodiacAnalysis(period);
-      if(periodData && periodData.sortedZodiacs && periodData.sortedZodiacs.length > 0) {
-        // 使用五维度评分算法（与预测一致）
-        const continuous = analysisCalc.calcContinuousScores(periodData);
-        const sortedZodiacs = Object.entries(continuous.scores).sort((a, b) => b[1] - a[1]);
-        
-        // 取前3名
-        sortedZodiacs.slice(0, 3).forEach(([zod]) => {
-          if(!result.has(zod)) {
-            result.set(zod, []);
+      const rankedZodiacs = analysisCalc.calcSelectedZodiacsV3(period);
+      if (rankedZodiacs && rankedZodiacs.length > 0) {
+        rankedZodiacs.slice(0, 3).forEach((item) => {
+          if (!result.has(item.zodiac)) {
+            result.set(item.zodiac, []);
           }
-          result.get(zod).push(periodIndex + 1); // 1, 2, 3 分别对应10, 20, 30期
+          result.get(item.zodiac).push(periodIndex + 1);
         });
       }
     });
@@ -596,60 +591,48 @@ export const prediction = {
     try {
       const periods = [10, 20, 30];
       const periodLabels = { 10: '10期', 20: '20期', 30: '30期' };
+      const state = StateManager._state;
       
-      // 数据缓存
-      const dataCache = {
-        lastUpdated: 0,
-        data: {}
-      };
+      const fullNumZodiacMap = state.config?.fullNumZodiacMap;
+      const zodiacNumbers = analysisCalc.getZodiacNumbers(zodiac);
       
-      // 计算分析数据（带缓存）
       const calculateData = (period) => {
-        const now = Date.now();
-        // 缓存有效期为10秒
-        if (dataCache.data[period] && (now - dataCache.lastUpdated) < 10000) {
-          return dataCache.data[period];
-        }
-        
-        const data = analysisCalc.calcZodiacAnalysis(period);
-        dataCache.data[period] = data;
-        dataCache.lastUpdated = now;
-        return data;
+        const data = analysisCalc.calcSelectedZodiacsV3(period);
+        return data.find(item => item.zodiac === zodiac);
       };
 
-      // 渲染弹窗内容（使用requestAnimationFrame优化）
       const renderContent = (content, zodiac) => {
-        // 使用requestAnimationFrame优化DOM更新
         requestAnimationFrame(() => {
           let periodsHtml = '';
-          let overallScore = 0;
+          let totalScore = 0;
           let periodCount = 0;
           
+          let totalHotInertia = 0;
+          let totalMissRepair = 0;
+          let totalCycleBalance = 0;
+          let totalBaseScore = 0;
+          
+          const nextIssueObj = IssueManager.getNextIssue();
+          const currentIssue = nextIssueObj ? nextIssueObj.full : '2026100';
+          
           periods.forEach(period => {
-            const data = calculateData(period);
-            if (!data) return;
+            const result = calculateData(period);
+            if (!result) return;
             
-            // ✅ 使用五维度评分算法
-            const continuous = analysisCalc.calcContinuousScores(data);
-            const score = continuous.scores ? continuous.scores[zodiac] : 0;
-            const detail = continuous.details ? continuous.details[zodiac] : {};
-            
-            // 从原始数据中获取统计信息
-            const count = data.zodCount ? data.zodCount[zodiac] : 0;
-            const miss = data.zodMiss ? data.zodMiss[zodiac] : 0;
-            const avgMiss = data.zodAvgMiss ? data.zodAvgMiss[zodiac] : 0;
-            const percentage = data.total > 0 ? ((count / data.total) * 100).toFixed(2) : '0.00';
-            
-            let rank = '-';
-            if (continuous.scores) {
-              const sortedZodiacs = Object.entries(continuous.scores).sort((a, b) => b[1] - a[1]);
-              const idx = sortedZodiacs.findIndex(([z]) => z === zodiac);
-              if (idx !== -1) rank = `第${idx + 1}名`;
-            }
-            
-            // 计算总评分
-            overallScore += score;
+            const { totalScore: score, baseScore, hotInertiaBonus, missRepairBonus, cycleBalanceBonus, algorithmDetails } = result;
+            totalScore += score;
             periodCount++;
+            
+            totalHotInertia += hotInertiaBonus;
+            totalMissRepair += missRepairBonus;
+            totalCycleBalance += cycleBalanceBonus;
+            totalBaseScore += baseScore;
+            
+            const missPeriod = algorithmDetails?.missPeriod || 0;
+            const recent2Zodiac = algorithmDetails?.recent2Zodiac || [];
+            const cycleState = algorithmDetails?.cycleState || 'normal';
+            const missLevel = algorithmDetails?.missLevel || 'normal';
+            const dynamicWeight = algorithmDetails?.dynamicWeight || 1;
             
             periodsHtml += `
               <div style="margin-bottom:16px;">
@@ -657,50 +640,46 @@ export const prediction = {
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                   <div style="display:flex;flex-direction:column;gap:8px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <span style="font-size:13px;color:var(--sub-text);">排名</span>
-                      <span style="font-size:13px;font-weight:600;color:var(--text);">${Utils.escapeHtml(rank)}</span>
+                      <span style="font-size:13px;color:var(--sub-text);">总评分</span>
+                      <span style="font-size:13px;font-weight:600;color:var(--primary);">${score}分</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <span style="font-size:13px;color:var(--sub-text);">出现次数</span>
-                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(count.toString())}次</span>
+                      <span style="font-size:13px;color:var(--sub-text);">基础频次分</span>
+                      <span style="font-size:13px;color:var(--text);">${baseScore}分</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <span style="font-size:13px;color:var(--sub-text);">遗漏次数</span>
-                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(miss.toString())}期</span>
+                      <span style="font-size:13px;color:var(--sub-text);">动态权重</span>
+                      <span style="font-size:13px;color:var(--text);">×${dynamicWeight.toFixed(2)}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <span style="font-size:13px;color:var(--sub-text);">平均遗漏</span>
-                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(typeof avgMiss === 'number' ? avgMiss.toFixed(1) : '0')}期</span>
+                      <span style="font-size:13px;color:var(--sub-text);">遗漏期数</span>
+                      <span style="font-size:13px;color:var(--text);">${missPeriod}期</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <span style="font-size:13px;color:var(--sub-text);">占比</span>
-                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(percentage)}%</span>
+                      <span style="font-size:13px;color:var(--sub-text);">轮转状态</span>
+                      <span style="font-size:13px;padding:2px 8px;border-radius:10px;background:${cycleState === 'hot' ? 'var(--danger)' : cycleState === 'cold' ? 'var(--success)' : 'var(--primary)'};color:white;">${cycleState === 'hot' ? '热' : cycleState === 'cold' ? '冷' : '温'}</span>
                     </div>
                   </div>
                   <div style="display:flex;flex-direction:column;gap:8px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <span style="font-size:13px;color:var(--sub-text);">综合评分</span>
-                      <span style="font-size:13px;font-weight:600;color:var(--primary);">${Utils.escapeHtml(score.toString())}分</span>
+                      <span style="font-size:13px;color:var(--sub-text);">🔥热号惯性</span>
+                      <span style="font-size:13px;font-weight:600;color:var(--danger);">+${hotInertiaBonus}分</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <span style="font-size:13px;color:var(--sub-text);">基础热度</span>
-                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(detail.base ? detail.base.toString() : '0')}分</span>
+                      <span style="font-size:13px;color:var(--sub-text);">❄️冷号回补</span>
+                      <span style="font-size:13px;font-weight:600;color:#FF9800;">+${missRepairBonus}分</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <span style="font-size:13px;color:var(--sub-text);">形态共振</span>
-                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(detail.shape ? detail.shape.toString() : '0')}分</span>
+                      <span style="font-size:13px;color:var(--sub-text);">🔄轮换平衡</span>
+                      <span style="font-size:13px;font-weight:600;color:${cycleBalanceBonus >= 0 ? 'var(--success)' : 'var(--danger)'};">${cycleBalanceBonus >= 0 ? '+' : ''}${cycleBalanceBonus}分</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <span style="font-size:13px;color:var(--sub-text);">间隔规律</span>
-                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(detail.interval ? detail.interval.toString() : '0')}分</span>
+                      <span style="font-size:13px;color:var(--sub-text);">遗漏等级</span>
+                      <span style="font-size:13px;padding:2px 8px;border-radius:10px;background:${missLevel === 'extreme_cold' ? '#9C27B0' : missLevel === 'deep_cold' ? '#E91E63' : missLevel === 'light_cold' ? '#FF9800' : 'var(--primary)'};color:white;">${missLevel === 'extreme_cold' ? '极冷' : missLevel === 'deep_cold' ? '深冷' : missLevel === 'light_cold' ? '轻冷' : '正常'}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <span style="font-size:13px;color:var(--sub-text);">趋势动量</span>
-                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(detail.trend ? detail.trend.toString() : '0')}分</span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <span style="font-size:13px;color:var(--sub-text);">近期动量</span>
-                      <span style="font-size:13px;color:var(--text);">${Utils.escapeHtml(detail.momentum ? detail.momentum.toString() : '0')}分</span>
+                      <span style="font-size:13px;color:var(--sub-text);">近2期生肖</span>
+                      <span style="font-size:13px;color:var(--text);">${recent2Zodiac.length > 0 ? recent2Zodiac.join(' → ') : '-'}</span>
                     </div>
                   </div>
                 </div>
@@ -708,19 +687,36 @@ export const prediction = {
             `;
           });
           
-          // 计算平均评分
-          const averageScore = periodCount > 0 ? (overallScore / periodCount).toFixed(1) : '0.0';
+          const averageScore = periodCount > 0 ? (totalScore / periodCount).toFixed(1) : '0.0';
+          const avgHotInertia = periodCount > 0 ? Math.round(totalHotInertia / periodCount) : 0;
+          const avgMissRepair = periodCount > 0 ? Math.round(totalMissRepair / periodCount) : 0;
+          const avgCycleBalance = periodCount > 0 ? Math.round(totalCycleBalance / periodCount) : 0;
+          const avgBaseScore = periodCount > 0 ? Math.round(totalBaseScore / periodCount) : 0;
           
-          // 获取下一期期号（统一使用IssueManager）
-          const nextIssueObj = IssueManager.getNextIssue();
-          const currentIssue = nextIssueObj ? nextIssueObj.full : '2026100';
+          const reasons = [];
+          if (avgHotInertia > 0) reasons.push(`🔥近期热号惯性，加分${avgHotInertia}分`);
+          if (avgMissRepair > 0) reasons.push(`❄️遗漏回补潜力，加分${avgMissRepair}分`);
+          if (avgCycleBalance > 0) reasons.push(`🔄轮换平衡加分${avgCycleBalance}分`);
+          else if (avgCycleBalance < 0) reasons.push(`📉连续高热扣分${avgCycleBalance}分`);
           
-          // 使用文档片段减少DOM操作
+          const reasonText = reasons.length > 0 ? reasons.join('；') : '暂无明显优势';
+          
+          const recommendedNumbers = zodiacNumbers.map(num => `<span style="display:inline-block;min-width:36px;padding:6px 12px;background:var(--primary);color:white;border-radius:16px;font-weight:600;margin:4px;">${String(num).padStart(2, '0')}</span>`).join('');
+          
+          const firstResult = periods.length > 0 ? calculateData(periods[0]) : null;
+          const pattern = firstResult?.algorithmDetails?.pattern || '-';
+          const patternConfidence = firstResult?.algorithmDetails?.patternConfidence || 0;
+          const marketInfo = firstResult?.algorithmDetails?.marketInfo || {};
+          const multiWindow = firstResult?.algorithmDetails?.multiWindow || {};
+          
+          const isAlternating = marketInfo.isAlternating;
+          const marketBadge = isAlternating ? '<span style="display:inline-block;padding:2px 8px;background:#9C27B0;color:white;border-radius:10px;font-size:12px;margin-left:8px;">冷热交替行情</span>' : '';
+          
           const fragment = document.createDocumentFragment();
           const newContent = document.createElement('div');
           newContent.innerHTML = `
             <div class="modal-header">
-              <h3 class="modal-title">${Utils.escapeHtml(zodiac)} 详细评分 (第${Utils.escapeHtml(currentIssue)}期精选)</h3>
+              <h3 class="modal-title">🎯 ${Utils.escapeHtml(zodiac)} 精选详情 (第${Utils.escapeHtml(currentIssue)}期)${marketBadge}</h3>
               <button class="modal-close-btn" onclick="this.closest('.modal-overlay').remove()">×</button>
             </div>
             <div class="modal-body">
@@ -730,47 +726,121 @@ export const prediction = {
                   <span style="font-size:24px;font-weight:700;">${Utils.escapeHtml(averageScore)}分</span>
                 </div>
               </div>
+              
+              <div style="margin-bottom:16px;">
+                <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text);">📈 走势识别</div>
+                <div style="padding:12px;background:var(--bg);border-radius:8px;">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                    <div style="padding:8px;background:white;border-radius:6px;text-align:center;">
+                      <div style="font-size:11px;color:var(--sub-text);">短(5期)</div>
+                      <div style="font-size:16px;font-weight:700;color:${multiWindow.short === 'hot' ? 'var(--danger)' : multiWindow.short === 'cold' ? 'var(--success)' : 'var(--primary)'};">${multiWindow.short === 'hot' ? '热' : multiWindow.short === 'cold' ? '冷' : '温'}</div>
+                    </div>
+                    <div style="padding:8px;background:white;border-radius:6px;text-align:center;">
+                      <div style="font-size:11px;color:var(--sub-text);">中(8期)</div>
+                      <div style="font-size:16px;font-weight:700;color:${multiWindow.mid === 'hot' ? 'var(--danger)' : multiWindow.mid === 'cold' ? 'var(--success)' : 'var(--primary)'};">${multiWindow.mid === 'hot' ? '热' : multiWindow.mid === 'cold' ? '冷' : '温'}</div>
+                    </div>
+                    <div style="padding:8px;background:white;border-radius:6px;text-align:center;">
+                      <div style="font-size:11px;color:var(--sub-text);">长(10期)</div>
+                      <div style="font-size:16px;font-weight:700;color:${multiWindow.long === 'hot' ? 'var(--danger)' : multiWindow.long === 'cold' ? 'var(--success)' : 'var(--primary)'};">${multiWindow.long === 'hot' ? '热' : multiWindow.long === 'cold' ? '冷' : '温'}</div>
+                    </div>
+                    <div style="padding:8px;background:white;border-radius:6px;text-align:center;">
+                      <div style="font-size:11px;color:var(--sub-text);">走势判定</div>
+                      <div style="font-size:14px;font-weight:700;color:var(--primary);">${pattern}</div>
+                    </div>
+                  </div>
+                  <div style="text-align:center;font-size:12px;color:var(--sub-text);">
+                    可信度：${(patternConfidence * 100).toFixed(0)}%
+                  </div>
+                </div>
+              </div>
+              
+              <div style="margin-bottom:16px;">
+                <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text);">🎰 推荐号码</div>
+                <div style="padding:12px;background:var(--bg);border-radius:8px;text-align:center;">
+                  ${recommendedNumbers}
+                </div>
+              </div>
+              
+              <div style="margin-bottom:16px;">
+                <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text);">📋 推荐理由</div>
+                <div style="padding:12px;background:#FFF3E0;border-radius:8px;color:#E65100;font-size:13px;line-height:1.6;">
+                  ${reasonText}
+                </div>
+              </div>
+              
+              <div style="margin-bottom:16px;">
+                <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text);">🔬 算法评分明细</div>
+                <div style="padding:12px;background:var(--bg);border-radius:8px;">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                    <div style="padding:8px;background:white;border-radius:6px;text-align:center;">
+                      <div style="font-size:12px;color:var(--sub-text);">🔥热号惯性</div>
+                      <div style="font-size:18px;font-weight:700;color:var(--danger);">+${avgHotInertia}</div>
+                    </div>
+                    <div style="padding:8px;background:white;border-radius:6px;text-align:center;">
+                      <div style="font-size:12px;color:var(--sub-text);">❄️冷号回补</div>
+                      <div style="font-size:18px;font-weight:700;color:#FF9800;">+${avgMissRepair}</div>
+                    </div>
+                    <div style="padding:8px;background:white;border-radius:6px;text-align:center;">
+                      <div style="font-size:12px;color:var(--sub-text);">🔄轮换平衡</div>
+                      <div style="font-size:18px;font-weight:700;color:${avgCycleBalance >= 0 ? 'var(--success)' : 'var(--danger)'};">${avgCycleBalance >= 0 ? '+' : ''}${avgCycleBalance}</div>
+                    </div>
+                    <div style="padding:8px;background:white;border-radius:6px;text-align:center;">
+                      <div style="font-size:12px;color:var(--sub-text);">📊基础频次</div>
+                      <div style="font-size:18px;font-weight:700;color:var(--primary);">${avgBaseScore}</div>
+                    </div>
+                  </div>
+                  <div style="padding:8px;background:white;border-radius:6px;text-align:center;">
+                    <div style="font-size:12px;color:var(--sub-text);">📐 动态权重</div>
+                    <div style="font-size:18px;font-weight:700;color:var(--primary);">×${(1 + avgHotInertia/100 + avgMissRepair/100 + avgCycleBalance/100).toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
+              
               ${periodsHtml}
+              
+              <div style="margin-top:16px;padding:12px;background:linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);border-radius:8px;">
+                <div style="font-size:12px;color:var(--sub-text);line-height:1.6;">
+                  <div style="font-weight:600;margin-bottom:4px;">📖 V3.0算法说明</div>
+                  <div>• 🔥 热号惯性：利用近期开奖惯性，近期开出的生肖有延续概率</div>
+                  <div>• ❄️ 冷号回补：长期遗漏的生肖存在概率回补修复需求</div>
+                  <div>• 🔄 轮换平衡：12生肖遵循热转冷、冷转热的自然轮转规律</div>
+                  <div>• 📊 频次统计：历史开出频率作为模型基础得分盘口</div>
+                  <div style="margin-top:4px;">• 📈 走势识别：5/8/10期三窗口交叉验证，识别7种标准走势</div>
+                  <div>• 🔄 冷热交替：检测行情类型，动态调整权重</div>
+                </div>
+              </div>
             </div>
           `;
           
           fragment.appendChild(newContent);
-          
-          // 清空并添加新内容
           content.innerHTML = '';
           content.appendChild(fragment);
         });
       };
       
-      // 创建弹窗容器
       const modal = document.createElement('div');
       modal.className = 'modal-overlay';
       
-      // 创建弹窗内容
       const content = document.createElement('div');
       content.className = 'modal-content';
+      content.style.maxWidth = '90%';
+      content.style.width = '480px';
       
-      // 渲染初始内容
       renderContent(content, zodiac);
       
-      // 组装弹窗
       modal.appendChild(content);
       document.body.appendChild(modal);
       
-      // 触发动画
       setTimeout(() => {
         modal.style.opacity = '1';
         content.style.transform = 'scale(1)';
       }, 10);
       
-      // 点击模态框外部关闭
       modal.addEventListener('click', (e) => {
         if(e.target === modal) {
           modal.style.opacity = '0';
           content.style.transform = 'scale(0.9)';
-          setTimeout(() => {
-            modal.remove();
-          }, 300);
+          setTimeout(() => modal.remove(), 300);
         }
       });
     } catch (e) {

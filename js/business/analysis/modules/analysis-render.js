@@ -535,24 +535,26 @@ export const analysisRender = {
         if(selectedZodiacsGrid) {
           import('../../prediction.js').then(({ prediction }) => {
             try {
-              const zodiacMap = prediction.getSelectedZodiacs();
+              const rankedZodiacs = analysisCalc.calcSelectedZodiacsV3(30);
               
-              if(zodiacMap.size > 0) {
+              if(rankedZodiacs && rankedZodiacs.length > 0) {
                 let selectedHtml = '';
-                let index = 0;
-                zodiacMap.forEach((periods, zod) => {
-                  index++;
-                  let periodsHtml = '';
-                  periods.forEach(period => {
-                    periodsHtml += `<span class="selected-zodiac-period-tag">${period}</span>`;
-                  });
+                const topZodiacs = rankedZodiacs.slice(0, 6);
+                
+                topZodiacs.forEach((item) => {
+                  const score = item.totalScore;
+                  const scoreClass = score >= 70 ? 'high-score' : score >= 50 ? 'mid-score' : 'low-score';
+                  const pattern = item.algorithmDetails?.pattern || '未知';
+                  const patternBadge = pattern === '持续热肖' ? '🔥' : 
+                                       pattern === '持续冷肖' ? '❄️' : 
+                                       pattern === '冷热交替' ? '🔄' : 
+                                       pattern === '温态肖' ? '🌡️' : '';
                   
                   selectedHtml += `
-                    <div class="selected-zodiac-item" data-zodiac="${zod}">
-                      <div class="zodiac-periods">
-                        ${periodsHtml}
-                      </div>
-                      <div class="zodiac-name">${zod}</div>
+                    <div class="selected-zodiac-item" data-zodiac="${item.zodiac}">
+                      <div class="zodiac-name">${item.zodiac}</div>
+                      <div class="zodiac-score ${scoreClass}">${score}分</div>
+                      ${patternBadge ? `<div class="zodiac-pattern">${patternBadge}</div>` : ''}
                     </div>
                   `;
                 });

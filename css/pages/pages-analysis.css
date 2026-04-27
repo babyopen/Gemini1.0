@@ -980,7 +980,37 @@
 .selected-zodiac-item .zodiac-name {
   font-size: 16px;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.zodiac-score {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.zodiac-score.high-score {
+  background: linear-gradient(135deg, #FF3B30, #FF6B6B);
+  color: #fff;
+}
+
+.zodiac-score.mid-score {
+  background: linear-gradient(135deg, var(--primary), #5AC8FA);
+  color: #fff;
+}
+
+.zodiac-score.low-score {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-secondary);
+}
+
+.zodiac-pattern {
+  font-size: 14px;
+  text-align: center;
+  margin-top: 4px;
 }
 
 /* 优化期数标签显示 - 左上角定位 */

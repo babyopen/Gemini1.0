@@ -1192,5 +1192,839 @@ export const analysisCalc = {
       '猪': [11, 23, 35, 47]
     };
     return zodiacNums[zodiac] || [];
+  },
+
+  /**
+   * ========================================
+   * 特码推演四大核心算法 V2.0
+   * ========================================
+   * 一、热号惯性算法（趋势延续逻辑）
+   * 二、冷号遗漏回补算法（周期修复逻辑）
+   * 三、生肖轮换平衡逻辑（12宫轮转逻辑）
+   * 四、频次统计排序算法（历史概率基底逻辑）
+   */
+
+  /**
+   * 【算法一】热号惯性算法
+   * 核心目的：利用短期开奖惯性，近期开出的生肖有延续出号概率
+   * @param {Array} list - 历史数据列表
+   * @param {string} zodiac - 生肖名称
+   * @param {number} totalPeriods - 总期数
+   * @returns {Object} 热惯性得分和系数
+   */
+  calcHotInertia: (list, zodiac, totalPeriods) => {
+    const result = {
+      hotInertiaBonus: 0,
+      hotInertiaCoeff: 0,
+      recent2Zodiac: [],
+      isContinuousHot: false,
+      continuousHotCount: 0
+    };
+
+    if (!list || list.length < 2) {
+      return result;
+    }
+
+    const recent2Zodiacs = [
+      analysisCalc.getSpecial(list[0]).zod,
+      analysisCalc.getSpecial(list[1]).zod
+    ];
+
+    result.recent2Zodiac = recent2Zodiacs;
+
+    let hotCount = 0;
+    recent2Zodiacs.forEach(z => {
+      if (z === zodiac) hotCount++;
+    });
+
+    if (hotCount > 0) {
+      result.continuousHotCount = hotCount;
+      result.isContinuousHot = recent2Zodiacs[0] === recent2Zodiacs[1];
+
+      if (result.isContinuousHot && zodiac === recent2Zodiacs[0]) {
+        result.hotInertiaCoeff = 0.15;
+        result.hotInertiaBonus = 15;
+      } else if (hotCount >= 1) {
+        result.hotInertiaCoeff = 0.10;
+        result.hotInertiaBonus = 10;
+      }
+
+      const recent3 = list.slice(0, Math.min(3, list.length));
+      let streakCount = 1;
+      let prevZodiac = analysisCalc.getSpecial(recent3[0]).zod;
+      for (let i = 1; i < recent3.length; i++) {
+        const currentZodiac = analysisCalc.getSpecial(recent3[i]).zod;
+        if (currentZodiac === prevZodiac) {
+          streakCount++;
+        } else {
+          break;
+        }
+        prevZodiac = currentZodiac;
+      }
+
+      if (streakCount > 3) {
+        const decayFactor = Math.max(0.5, 1 - (streakCount - 3) * 0.1);
+        result.hotInertiaBonus = Math.round(result.hotInertiaBonus * decayFactor);
+      }
+    }
+
+    return result;
+  },
+
+  /**
+   * 【算法二】冷号遗漏回补算法
+   * 核心目的：大数规律下，长期遗漏不出的生肖存在概率回补修复需求
+   * @param {number} missPeriod - 当前遗漏期数
+   * @param {number} avgMiss - 平均遗漏期数
+   * @param {number} totalPeriods - 总期数
+   * @returns {Object} 遗漏回补得分和系数
+   */
+  calcMissRepair: (missPeriod, avgMiss, totalPeriods) => {
+    const result = {
+      missRepairBonus: 0,
+      missRepairCoeff: 0,
+      missLevel: 'normal',
+      missPeriod: missPeriod
+    };
+
+    const DEEP_COLD_THRESHOLD = 15;
+    const EXTREME_COLD_THRESHOLD = 30;
+    const LIGHT_MISS_MIN = 5;
+    const LIGHT_MISS_MAX = 14;
+
+    if (missPeriod >= EXTREME_COLD_THRESHOLD) {
+      result.missLevel = 'extreme_cold';
+      const maxBonus = 25;
+      const overflow = missPeriod - EXTREME_COLD_THRESHOLD;
+      const overflowRatio = Math.min(overflow / 20, 0.5);
+      result.missRepairBonus = Math.round(maxBonus * (1 - overflowRatio));
+      result.missRepairCoeff = Math.round(result.missRepairBonus / 30 * 15) / 10;
+    } else if (missPeriod >= DEEP_COLD_THRESHOLD) {
+      result.missLevel = 'deep_cold';
+      const overflow = missPeriod - DEEP_COLD_THRESHOLD;
+      result.missRepairBonus = Math.round(20 + overflow * 0.5);
+      result.missRepairCoeff = 0.5 + Math.min(overflow * 0.05, 0.3);
+    } else if (missPeriod >= LIGHT_MISS_MIN && missPeriod <= LIGHT_MISS_MAX) {
+      result.missLevel = 'light_cold';
+      const factor = (missPeriod - LIGHT_MISS_MIN) / (LIGHT_MISS_MAX - LIGHT_MISS_MIN);
+      result.missRepairBonus = Math.round(5 + factor * 10);
+      result.missRepairCoeff = 0.2 + factor * 0.3;
+    } else {
+      result.missLevel = 'normal';
+      result.missRepairBonus = missPeriod > avgMiss ? Math.round((missPeriod - avgMiss) * 0.5) : 0;
+      result.missRepairCoeff = 0;
+    }
+
+    return result;
+  },
+
+  /**
+   * 【算法三】生肖轮换平衡算法
+   * 核心目的：12生肖不会长期扎堆开出，遵循热转温、温转冷、冷转回补自然轮转
+   * @param {string} zodiac - 当前生肖
+   * @param {Object} zodiacStateMap - 生肖状态映射
+   * @param {number} currentHotCount - 当前生肖在分析期数内的出现次数
+   * @param {number} totalPeriods - 总期数
+   * @param {Array} list - 历史数据列表
+   * @returns {Object} 轮转平衡得分
+   */
+  calcCycleBalance: (zodiac, zodiacStateMap, currentHotCount, totalPeriods, list) => {
+    const result = {
+      cycleBalanceBonus: 0,
+      cycleState: 'normal',
+      balanceScore: 0
+    };
+
+    const avgCount = totalPeriods / 12;
+    const hotThreshold = avgCount * 1.3;
+    const coldThreshold = avgCount * 0.7;
+
+    if (currentHotCount >= hotThreshold) {
+      result.cycleState = 'hot';
+      result.cycleBalanceBonus = -5;
+      result.balanceScore = -5;
+    } else if (currentHotCount <= coldThreshold) {
+      result.cycleState = 'cold';
+      const coldRatio = 1 - (currentHotCount / coldThreshold);
+      result.cycleBalanceBonus = Math.round(10 + coldRatio * 15);
+      result.balanceScore = result.cycleBalanceBonus;
+    } else {
+      result.cycleState = 'warm';
+      result.cycleBalanceBonus = 3;
+      result.balanceScore = 3;
+    }
+
+    const recent5 = list.slice(0, Math.min(5, list.length));
+    const recent5Zodiacs = recent5.map(item => analysisCalc.getSpecial(item).zod);
+    const hotZodiacInRecent5 = recent5Zodiacs.filter(z => z === zodiac).length;
+
+    if (hotZodiacInRecent5 >= 2) {
+      result.cycleBalanceBonus -= 3;
+      result.balanceScore -= 3;
+    }
+
+    const recent10 = list.slice(0, Math.min(10, list.length));
+    const coldZodiacInRecent10 = recent10.filter(item => {
+      const z = analysisCalc.getSpecial(item).zod;
+      return zodiacStateMap[z] === 'cold' || zodiacStateMap[z] === 'extreme_cold';
+    }).length;
+
+    if (coldZodiacInRecent10 >= 7 && result.cycleState !== 'hot') {
+      result.cycleBalanceBonus += 5;
+      result.balanceScore += 5;
+    }
+
+    return result;
+  },
+
+  /**
+   * 【算法四】频次统计排序算法
+   * 核心目的：以历史整体开出频率作为模型基础得分盘口
+   * @param {number} count - 生肖出现次数
+   * @param {number} totalPeriods - 总期数
+   * @param {Array} list - 历史数据列表（用于计算近期频次）
+   * @returns {Object} 频次基础分
+   */
+  calcFrequencyScore: (count, totalPeriods, list) => {
+    const result = {
+      baseScore: 0,
+      longTermWeight: 0.6,
+      shortTermWeight: 0.4,
+      longTermScore: 0,
+      shortTermScore: 0
+    };
+
+    const totalRatio = count / totalPeriods;
+    result.longTermScore = Math.round(totalRatio * 40);
+
+    const recent30 = list.slice(0, Math.min(30, list.length));
+    const recent30Count = {};
+    const zodiacOrder = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+    zodiacOrder.forEach(z => { recent30Count[z] = 0; });
+    recent30.forEach(item => {
+      const z = analysisCalc.getSpecial(item).zod;
+      if (recent30Count.hasOwnProperty(z)) {
+        recent30Count[z]++;
+      }
+    });
+
+    const recent30Total = recent30.length;
+    const recent30Ratio = recent30Count[Object.keys(recent30Count)[0]] !== undefined 
+      ? count / recent30Total 
+      : totalRatio;
+    result.shortTermScore = Math.round(Math.min(recent30Ratio, 1) * 30);
+
+    result.baseScore = Math.round(
+      result.longTermWeight * result.longTermScore + 
+      result.shortTermWeight * result.shortTermScore
+    );
+
+    return result;
+  },
+
+  /**
+   * ========================================
+   * 综合算法融合 - 总公式计算
+   * ========================================
+   * 总得分 = 
+   *   基础频次分 × 动态权重 
+   *   + 热号惯性加分（+10%~15%）
+   *   + 遗漏回补加分 
+   *   + 轮转平衡得分
+   * 按总得分降序，选出最优独胆 + 三码特码
+   */
+  calcFourAlgorithmFusion: (list, targetZodiac) => {
+    const zodiacOrder = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+    const totalPeriods = list.length;
+
+    if (totalPeriods === 0) {
+      return {
+        totalScore: 0,
+        baseScore: 0,
+        hotInertiaBonus: 0,
+        missRepairBonus: 0,
+        cycleBalanceBonus: 0,
+        algorithmDetails: {}
+      };
+    }
+
+    const zodMiss = {};
+    zodiacOrder.forEach(z => { zodMiss[z] = totalPeriods; });
+    list.forEach((item, idx) => {
+      const s = analysisCalc.getSpecial(item);
+      if (zodMiss[s.zod] === totalPeriods) {
+        zodMiss[s.zod] = idx;
+      }
+    });
+
+    const avgMiss = totalPeriods / 12;
+
+    const zodCount = {};
+    zodiacOrder.forEach(z => { zodCount[z] = 0; });
+    list.forEach(item => {
+      const s = analysisCalc.getSpecial(item);
+      zodCount[s.zod]++;
+    });
+
+    const zodiacStateMap = {};
+    const avgCount = totalPeriods / 12;
+    zodiacOrder.forEach(z => {
+      const count = zodCount[z];
+      const miss = zodMiss[z];
+      if (count >= avgCount * 1.5 && miss <= 3) {
+        zodiacStateMap[z] = 'hot';
+      } else if (count <= avgCount * 0.3 || miss >= avgMiss * 2) {
+        zodiacStateMap[z] = 'cold';
+      } else if (miss >= avgMiss * 1.5) {
+        zodiacStateMap[z] = 'warm';
+      } else {
+        zodiacStateMap[z] = 'normal';
+      }
+    });
+
+    const freqResult = analysisCalc.calcFrequencyScore(zodCount[targetZodiac], totalPeriods, list);
+    const hotInertiaResult = analysisCalc.calcHotInertia(list, targetZodiac, totalPeriods);
+    const missRepairResult = analysisCalc.calcMissRepair(zodMiss[targetZodiac], avgMiss, totalPeriods);
+    const cycleBalanceResult = analysisCalc.calcCycleBalance(
+      targetZodiac, 
+      zodiacStateMap, 
+      zodCount[targetZodiac], 
+      totalPeriods, 
+      list
+    );
+
+    const dynamicWeight = 1.0 + hotInertiaResult.hotInertiaCoeff + missRepairResult.missRepairCoeff;
+    const baseWithWeight = freqResult.baseScore * dynamicWeight;
+    const totalScore = Math.round(
+      baseWithWeight + 
+      hotInertiaResult.hotInertiaBonus + 
+      missRepairResult.missRepairBonus + 
+      cycleBalanceResult.cycleBalanceBonus
+    );
+
+    return {
+      totalScore: Math.max(0, totalScore),
+      baseScore: freqResult.baseScore,
+      hotInertiaBonus: hotInertiaResult.hotInertiaBonus,
+      missRepairBonus: missRepairResult.missRepairBonus,
+      cycleBalanceBonus: cycleBalanceResult.cycleBalanceBonus,
+      algorithmDetails: {
+        hotInertia: hotInertiaResult,
+        missRepair: missRepairResult,
+        cycleBalance: cycleBalanceResult,
+        frequency: freqResult,
+        dynamicWeight: dynamicWeight,
+        missPeriod: zodMiss[targetZodiac],
+        recent2Zodiac: hotInertiaResult.recent2Zodiac,
+        cycleState: cycleBalanceResult.cycleState,
+        missLevel: missRepairResult.missLevel
+      }
+    };
+  },
+
+  /**
+   * 使用四大算法计算精选生肖 - 升级版V2.0
+   * @param {number} periodLimit - 分析期数限制
+   * @returns {Array} 排序后的生肖数组 [{zodiac, totalScore, algorithmDetails}, ...]
+   */
+  calcSelectedZodiacsV2: (periodLimit) => {
+    const state = StateManager._state;
+    const { historyData } = state.analysis;
+    const zodiacOrder = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+
+    let list = historyData.slice(0, Math.min(periodLimit, historyData.length));
+    
+    if (periodLimit === 'all' || periodLimit === 365) {
+      const currentLunarYear = analysisCalc.getCurrentLunarYear();
+      list = historyData.filter(item => {
+        const itemLunarYear = analysisCalc.getLunarYearByDate(item.date);
+        return itemLunarYear === currentLunarYear;
+      }).slice(0, periodLimit === 'all' ? 365 : periodLimit);
+    }
+
+    if (list.length === 0) {
+      return [];
+    }
+
+    const allZodiacScores = [];
+    
+    zodiacOrder.forEach(zodiac => {
+      const result = analysisCalc.calcFourAlgorithmFusion(list, zodiac);
+      allZodiacScores.push({
+        zodiac: zodiac,
+        totalScore: result.totalScore,
+        baseScore: result.baseScore,
+        hotInertiaBonus: result.hotInertiaBonus,
+        missRepairBonus: result.missRepairBonus,
+        cycleBalanceBonus: result.cycleBalanceBonus,
+        algorithmDetails: result.algorithmDetails
+      });
+    });
+
+    allZodiacScores.sort((a, b) => b.totalScore - a.totalScore);
+
+    return allZodiacScores;
+  },
+
+  /**
+   * 获取精选生肖（兼容旧版接口）
+   * @param {number} periodLimit - 分析期数限制
+   * @returns {Map} 生肖Map，生肖名 -> 出现期数数组
+   */
+  getSelectedZodiacsWithPeriods: (periodLimit) => {
+    const periodOptions = [10, 20, 30];
+    const result = new Map();
+
+    periodOptions.forEach((period, periodIndex) => {
+      const rankedZodiacs = analysisCalc.calcSelectedZodiacsV2(period);
+      if (rankedZodiacs && rankedZodiacs.length > 0) {
+        rankedZodiacs.slice(0, 3).forEach((item) => {
+          if (!result.has(item.zodiac)) {
+            result.set(item.zodiac, []);
+          }
+          result.get(item.zodiac).push(periodIndex + 1);
+        });
+      }
+    });
+
+    return result;
+  },
+
+  /**
+   * 获取精选生肖（简化版，直接返回生肖名）
+   * @returns {Array} 生肖名数组
+   */
+  getSelectedZodiacsSimple: () => {
+    const result = new Map();
+    const periods = [10, 20, 30];
+
+    periods.forEach((period, periodIndex) => {
+      const rankedZodiacs = analysisCalc.calcSelectedZodiacsV2(period);
+      if (rankedZodiacs && rankedZodiacs.length > 0) {
+        rankedZodiacs.slice(0, 3).forEach((item) => {
+          if (!result.has(item.zodiac)) {
+            result.set(item.zodiac, []);
+          }
+          result.get(item.zodiac).push(periodIndex + 1);
+        });
+      }
+    });
+
+    return Array.from(result.keys());
+  },
+
+  /**
+   * 获取精选特码（基于四大算法）
+   * @param {number} targetCount - 目标数量
+   * @param {string} mode - 模式：'hot'/'cold'/'auto'
+   * @returns {Array} 号码数组
+   */
+  getSpecialNumbersV2: (targetCount = 10, mode = 'hot') => {
+    const rankedZodiacs = analysisCalc.calcSelectedZodiacsV2(30);
+    const state = StateManager._state;
+    const config = state.config || {};
+    const fullNumZodiacMap = config.fullNumZodiacMap || new Map();
+
+    if (rankedZodiacs.length === 0) {
+      return [];
+    }
+
+    let targetZodiacs = [];
+    if (mode === 'hot') {
+      targetZodiacs = rankedZodiacs.slice(0, 6).map(item => item.zodiac);
+    } else if (mode === 'cold') {
+      targetZodiacs = rankedZodiacs.slice(-6).map(item => item.zodiac);
+    } else {
+      const autoHotCount = rankedZodiacs.filter(item => item.algorithmDetails?.missLevel === 'normal' || item.algorithmDetails?.missLevel === 'warm').length;
+      targetZodiacs = rankedZodiacs.slice(0, Math.max(3, Math.ceil(autoHotCount / 2))).map(item => item.zodiac);
+    }
+
+    const recent10 = state.analysis.historyData?.slice(0, 10) || [];
+    const tailStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+    const colorStats = { '红': 0, '蓝': 0, '绿': 0 };
+    const headStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+
+    recent10.forEach(item => {
+      const s = analysisCalc.getSpecial(item);
+      if (s.tail !== undefined) tailStats[s.tail]++;
+      if (s.colorName) colorStats[s.colorName]++;
+      if (s.head !== undefined && s.head >= 0 && s.head <= 4) headStats[s.head]++;
+    });
+
+    const hotTails = Object.entries(tailStats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(item => parseInt(item[0]));
+    const hotColors = Object.entries(colorStats).sort((a, b) => b[1] - a[1]).slice(0, 2).map(item => item[0]);
+    const hotHeads = Object.entries(headStats).sort((a, b) => b[1] - a[1]).slice(0, 3).map(item => parseInt(item[0]));
+
+    const candidateNums = [];
+    for (let num = 1; num <= 49; num++) {
+      const zodiac = fullNumZodiacMap.get(num);
+      if (!zodiac || !targetZodiacs.includes(zodiac)) continue;
+
+      const tail = num % 10;
+      const head = Math.floor(num / 10);
+      const colorName = analysisCalc.getColorName(num);
+
+      let matchCount = 0;
+      if (targetZodiacs.includes(zodiac)) matchCount++;
+      if (hotTails.includes(tail)) matchCount++;
+      if (hotColors.includes(colorName)) matchCount++;
+      if (hotHeads.includes(head)) matchCount++;
+
+      if (matchCount >= 3) {
+        candidateNums.push({ num, matchCount, score: rankedZodiacs.find(r => r.zodiac === zodiac)?.totalScore || 0 });
+      }
+    }
+
+    candidateNums.sort((a, b) => {
+      if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount;
+      return b.score - a.score;
+    });
+
+    return candidateNums.slice(0, targetCount).map(item => item.num);
+  },
+
+  /**
+   * ========================================
+   * 特码推演算法 V3.0 - 终极版
+   * ========================================
+   * 核心升级：多窗口交叉识别 + 冷热交替行情适配
+   */
+
+  /**
+   * 【核心模块】多窗口交叉形态识别
+   * 识别7种标准走势
+   */
+  detectMultiWindowPattern: (list, targetZodiac) => {
+    const WINDOWS = {
+      short: 5,
+      mid: 8,
+      long: 10
+    };
+
+    const zodiacOrder = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+    const avgCount = list.length / 12;
+
+    const getZodiacState = (periodList) => {
+      const counts = {};
+      zodiacOrder.forEach(z => counts[z] = 0);
+      periodList.forEach(item => {
+        const z = analysisCalc.getSpecial(item).zod;
+        if (counts.hasOwnProperty(z)) counts[z]++;
+      });
+      
+      const targetCount = counts[targetZodiac] || 0;
+      const avg = periodList.length / 12;
+      
+      if (targetCount >= avg * 1.5) return 'hot';
+      if (targetCount <= avg * 0.5) return 'cold';
+      return 'warm';
+    };
+
+    const shortList = list.slice(0, WINDOWS.short);
+    const midList = list.slice(0, WINDOWS.mid);
+    const longList = list.slice(0, WINDOWS.long);
+
+    const shortState = shortList.length >= 3 ? getZodiacState(shortList) : 'warm';
+    const midState = midList.length >= 5 ? getZodiacState(midList) : 'warm';
+    const longState = longList.length >= 7 ? getZodiacState(longList) : 'warm';
+
+    const states = [shortState, midState, longState];
+    const stateCounts = { hot: 0, warm: 0, cold: 0 };
+    states.forEach(s => stateCounts[s]++);
+
+    let pattern = '';
+    let patternConfidence = 0;
+    let windowWeight = 1;
+
+    if (stateCounts.hot === 3) {
+      pattern = '持续热肖';
+      patternConfidence = 0.95;
+      windowWeight = 1.2;
+    } else if (stateCounts.cold === 3) {
+      pattern = '持续冷肖';
+      patternConfidence = 0.9;
+      windowWeight = 1.1;
+    } else if (stateCounts.warm === 3) {
+      pattern = '温态肖';
+      patternConfidence = 0.8;
+      windowWeight = 1.0;
+    } else if (stateCounts.hot >= 2) {
+      pattern = '先热后冷';
+      patternConfidence = 0.75;
+      windowWeight = 0.9;
+    } else if (stateCounts.cold >= 2) {
+      pattern = '先冷后热';
+      patternConfidence = 0.75;
+      windowWeight = 0.95;
+    } else if (stateCounts.warm >= 2) {
+      pattern = '震荡轮转';
+      patternConfidence = 0.7;
+      windowWeight = 0.85;
+    } else {
+      pattern = '冷热交替';
+      patternConfidence = 0.65;
+      windowWeight = 0.8;
+    }
+
+    if (states[0] !== states[1] && states[1] !== states[2] && states[0] !== states[2]) {
+      pattern = '无序震荡';
+      patternConfidence = 0.5;
+      windowWeight = 0.6;
+    }
+
+    return {
+      pattern,
+      patternConfidence,
+      windowWeight,
+      shortState,
+      midState,
+      longState,
+      windowConfig: WINDOWS
+    };
+  },
+
+  /**
+   * 【专项模块】冷热交替行情适配
+   */
+  detectColdHotAlternatingMarket: (list) => {
+    if (list.length < 10) return { isAlternating: false, confidence: 0 };
+
+    const zodiacOrder = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+    const recent10 = list.slice(0, 10);
+    
+    const hotCount = recent10.filter(item => {
+      const z = analysisCalc.getSpecial(item).zod;
+      const avg = recent10.length / 12;
+      const counts = {};
+      zodiacOrder.forEach(z => counts[z] = 0);
+      recent10.forEach(i => counts[analysisCalc.getSpecial(i).zod]++);
+      return counts[z] >= avg * 1.3;
+    }).length;
+
+    const coldCount = recent10.filter(item => {
+      const z = analysisCalc.getSpecial(item).zod;
+      const avg = recent10.length / 12;
+      const counts = {};
+      zodiacOrder.forEach(z => counts[z] = 0);
+      recent10.forEach(i => counts[analysisCalc.getSpecial(i).zod]++);
+      return counts[z] <= avg * 0.7;
+    }).length;
+
+    const hotRatio = hotCount / 10;
+    const coldRatio = coldCount / 10;
+
+    const consecutiveHot = (() => {
+      let max = 1, current = 1;
+      for (let i = 1; i < recent10.length; i++) {
+        const prev = analysisCalc.getSpecial(recent10[i-1]).zod;
+        const curr = analysisCalc.getSpecial(recent10[i]).zod;
+        if (prev === curr) {
+          current++;
+          max = Math.max(max, current);
+        } else {
+          current = 1;
+        }
+      }
+      return max;
+    })();
+
+    const isAlternating = hotRatio < 0.4 && coldRatio < 0.4 && consecutiveHot <= 2;
+    const confidence = isAlternating ? Math.min(0.9, 0.6 + (1 - hotRatio) * 0.3) : 0;
+
+    return {
+      isAlternating,
+      confidence,
+      hotRatio,
+      coldRatio,
+      consecutiveHot,
+      marketType: isAlternating ? 'cold_hot_alternating' : 'normal'
+    };
+  },
+
+  /**
+   * 【V3.0核心】终极版精选生肖计算
+   * 融合：四大基础算法 + 多窗口识别 + 冷热交替适配
+   */
+  calcSelectedZodiacsV3: (periodLimit) => {
+    const state = StateManager._state;
+    const { historyData } = state.analysis;
+    const zodiacOrder = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+
+    let list = historyData.slice(0, Math.min(periodLimit, historyData.length));
+    
+    if (periodLimit === 'all' || periodLimit === 365) {
+      const currentLunarYear = analysisCalc.getCurrentLunarYear();
+      list = historyData.filter(item => {
+        const itemLunarYear = analysisCalc.getLunarYearByDate(item.date);
+        return itemLunarYear === currentLunarYear;
+      }).slice(0, periodLimit === 'all' ? 365 : periodLimit);
+    }
+
+    if (list.length === 0) {
+      return [];
+    }
+
+    const marketInfo = analysisCalc.detectColdHotAlternatingMarket(list);
+    const isAlternating = marketInfo.isAlternating;
+    const marketBonus = isAlternating ? 0.25 : 0;
+
+    const allZodiacScores = [];
+    
+    zodiacOrder.forEach(zodiac => {
+      const patternInfo = analysisCalc.detectMultiWindowPattern(list, zodiac);
+      const baseResult = analysisCalc.calcFourAlgorithmFusion(list, zodiac);
+      
+      let { totalScore, baseScore, hotInertiaBonus, missRepairBonus, cycleBalanceBonus } = baseResult;
+      const { algorithmDetails } = baseResult;
+      
+      let patternBonus = 0;
+      let overheatPenalty = 0;
+
+      const recent3 = list.slice(0, 3);
+      const consecutiveCount = (() => {
+        if (recent3.length < 2) return 1;
+        let count = 1;
+        const firstZ = analysisCalc.getSpecial(recent3[0]).zod;
+        for (let i = 1; i < recent3.length; i++) {
+          if (analysisCalc.getSpecial(recent3[i]).zod === firstZ) count++;
+          else break;
+        }
+        return count;
+      })();
+
+      if (consecutiveCount > 3) {
+        overheatPenalty = Math.round(totalScore * 0.4);
+      }
+
+      if (patternInfo.pattern === '持续热肖') {
+        patternBonus = Math.round(baseScore * 0.15 * patternInfo.windowWeight);
+      } else if (patternInfo.pattern === '持续冷肖' || patternInfo.pattern === '先冷后热') {
+        patternBonus = Math.round(baseScore * 0.12 * patternInfo.windowWeight);
+      } else if (patternInfo.pattern === '温态肖') {
+        patternBonus = Math.round(baseScore * 0.08 * patternInfo.windowWeight);
+      } else if (patternInfo.pattern === '冷热交替') {
+        patternBonus = Math.round(baseScore * 0.05 * patternInfo.windowWeight);
+      }
+
+      if (isAlternating) {
+        cycleBalanceBonus = Math.round(cycleBalanceBonus * (1 + marketBonus));
+        if (hotInertiaBonus > 0 && consecutiveCount > 3) {
+          hotInertiaBonus = Math.round(hotInertiaBonus * 0.5);
+        }
+        if (patternInfo.pattern !== '持续热肖' && patternInfo.pattern !== '持续冷肖') {
+          patternBonus = Math.round(patternBonus * (1 + marketBonus * 0.5));
+        }
+      }
+
+      const finalScore = Math.max(0, Math.round(
+        totalScore - overheatPenalty + patternBonus
+      ));
+
+      allZodiacScores.push({
+        zodiac,
+        totalScore: finalScore,
+        baseScore,
+        hotInertiaBonus,
+        missRepairBonus,
+        cycleBalanceBonus,
+        patternBonus,
+        overheatPenalty,
+        algorithmDetails: {
+          ...algorithmDetails,
+          pattern: patternInfo.pattern,
+          patternConfidence: patternInfo.patternConfidence,
+          windowWeight: patternInfo.windowWeight,
+          marketInfo,
+          multiWindow: {
+            short: patternInfo.shortState,
+            mid: patternInfo.midState,
+            long: patternInfo.longState
+          }
+        }
+      });
+    });
+
+    allZodiacScores.sort((a, b) => b.totalScore - a.totalScore);
+
+    return allZodiacScores;
+  },
+
+  /**
+   * 【兼容接口】V3主入口，外部调用默认使用此函数
+   */
+  getSelectedZodiacsFinal: () => {
+    return analysisCalc.calcSelectedZodiacsV3(30);
+  },
+
+  /**
+   * 获取精选特码 V3（基于V3算法）
+   */
+  getSpecialNumbersV3: (targetCount = 10, mode = 'hot') => {
+    const rankedZodiacs = analysisCalc.calcSelectedZodiacsV3(30);
+    const state = StateManager._state;
+    const fullNumZodiacMap = state.config?.fullNumZodiacMap || new Map();
+
+    if (rankedZodiacs.length === 0) {
+      return [];
+    }
+
+    let targetZodiacs = [];
+    if (mode === 'hot') {
+      targetZodiacs = rankedZodiacs.slice(0, 6).map(item => item.zodiac);
+    } else if (mode === 'cold') {
+      targetZodiacs = rankedZodiacs.slice(-6).map(item => item.zodiac);
+    } else {
+      const warmZodiacs = rankedZodiacs.filter(item => 
+        item.algorithmDetails?.multiWindow?.mid === 'warm' || 
+        item.algorithmDetails?.pattern === '温态肖'
+      );
+      targetZodiacs = warmZodiacs.length > 0 
+        ? warmZodiacs.slice(0, 6).map(item => item.zodiac)
+        : rankedZodiacs.slice(0, 6).map(item => item.zodiac);
+    }
+
+    const recent10 = state.analysis.historyData?.slice(0, 10) || [];
+    const tailStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+    const colorStats = { '红': 0, '蓝': 0, '绿': 0 };
+    const headStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+
+    recent10.forEach(item => {
+      const s = analysisCalc.getSpecial(item);
+      if (s.tail !== undefined) tailStats[s.tail]++;
+      if (s.colorName) colorStats[s.colorName]++;
+      if (s.head !== undefined && s.head >= 0 && s.head <= 4) headStats[s.head]++;
+    });
+
+    const hotTails = Object.entries(tailStats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(item => parseInt(item[0]));
+    const hotColors = Object.entries(colorStats).sort((a, b) => b[1] - a[1]).slice(0, 2).map(item => item[0]);
+    const hotHeads = Object.entries(headStats).sort((a, b) => b[1] - a[1]).slice(0, 3).map(item => parseInt(item[0]));
+
+    const candidateNums = [];
+    for (let num = 1; num <= 49; num++) {
+      const zodiac = fullNumZodiacMap.get(num);
+      if (!zodiac || !targetZodiacs.includes(zodiac)) continue;
+
+      const tail = num % 10;
+      const head = Math.floor(num / 10);
+      const colorName = analysisCalc.getColorName(num);
+
+      let matchCount = 0;
+      if (targetZodiacs.includes(zodiac)) matchCount++;
+      if (hotTails.includes(tail)) matchCount++;
+      if (hotColors.includes(colorName)) matchCount++;
+      if (hotHeads.includes(head)) matchCount++;
+
+      if (matchCount >= 3) {
+        const zodiacScore = rankedZodiacs.find(r => r.zodiac === zodiac)?.totalScore || 0;
+        candidateNums.push({ num, matchCount, score: zodiacScore });
+      }
+    }
+
+    candidateNums.sort((a, b) => {
+      if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount;
+      return b.score - a.score;
+    });
+
+    return candidateNums.slice(0, targetCount).map(item => item.num);
   }
 };
