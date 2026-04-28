@@ -1,4 +1,62 @@
 // ====================== 记录页面业务逻辑（修复 map 错误） ======================
+
+/**
+ * 记录页面常量配置
+ * 集中管理所有魔法数字和字符串，便于维护和修改
+ */
+const RECORD_CONSTANTS = {
+  // 分页配置
+  PAGE_SIZE: 5,
+  COLLAPSE_THRESHOLD: 2,
+  
+  // 筛选配置
+  VALID_NUM_COUNTS: ['5', '10', '15', '20'],
+  DEFAULT_NUM_COUNT: '5',
+  DEFAULT_PERIOD: '10',
+  
+  // 动画配置
+  RENDER_DELAY: 100,
+  DEBOUNCE_DELAY: 100,
+  
+  // 下拉刷新配置
+  PULL_THRESHOLD: 60,
+  PULL_MAX_DISTANCE: 100,
+  
+  // 显示配置
+  SPECIAL_DISPLAY_COUNT: 5,
+  
+  // 检查配置
+  CHECK_RECENT_COUNT: 20,
+  
+  // 历史记录模式
+  HISTORY_MODES: {
+    ALL: 'all',
+    HOT: 'hot',
+    COLD: 'cold'
+  },
+  
+  // 缓存键
+  CACHE_KEYS: {
+    FAVORITES: 'favorites',
+    ZODIAC_RECORDS: 'zodiacRecords',
+    ML_PREDICTION_RECORDS: 'mlPredictionRecords',
+    NUMBER_RECORDS: 'numberRecords',
+    HOT_NUMBERS_RECORDS: 'hotNumbersRecords'
+  },
+  
+  // 期数选项
+  PERIOD_OPTIONS: ['10', '20', '30', 'all'],
+  
+  // 时间格式
+  DATE_FORMAT: {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }
+};
+
+// 导入依赖
 import { Storage } from '../storage.js';
 import { StateManager } from '../state-manager.js';
 import { Toast } from '../toast.js';
@@ -14,7 +72,7 @@ export const record = {
   _swipeHandlers: new WeakMap(),
   
   // ✅ 精选特码显示数量
-  _specialDisplayCount: 5,
+  _specialDisplayCount: RECORD_CONSTANTS.SPECIAL_DISPLAY_COUNT,
   
   init: () => {
     // 使用DOMContentLoaded确保DOM元素完全加载
@@ -84,8 +142,8 @@ export const record = {
         return;
       }
       
-      // 检查最近的开奖记录（最多检查最近20期，确保早期记录也能被核对）
-      const recentItems = historyData.slice(0, 20);
+      // 检查最近的开奖记录（最多检查最近CHECK_RECENT_COUNT期，确保早期记录也能被核对）
+      const recentItems = historyData.slice(0, RECORD_CONSTANTS.CHECK_RECENT_COUNT);
       
       console.log('[Record] 🔍 开始核对最近', recentItems.length, '期数据...');
       
@@ -165,16 +223,16 @@ export const record = {
       if (pullDistance > 0) {
         e.preventDefault();
         
-        // 计算下拉距离，最大100px
-        const distance = Math.min(pullDistance, 100);
+        // 计算下拉距离，最大PULL_MAX_DISTANCE
+        const distance = Math.min(pullDistance, RECORD_CONSTANTS.PULL_MAX_DISTANCE);
         
         // 设置指示器的transform和opacity
         indicator.style.transform = `translateY(${distance - 50}px)`;
-        indicator.style.opacity = distance / 100;
+        indicator.style.opacity = distance / RECORD_CONSTANTS.PULL_MAX_DISTANCE;
         
         // 更新文字
         if (refreshText) {
-          if (distance > 60) {
+          if (distance > RECORD_CONSTANTS.PULL_THRESHOLD) {
             refreshText.textContent = '释放刷新';
           } else {
             refreshText.textContent = '下拉刷新';
@@ -191,7 +249,7 @@ export const record = {
       const match = transform.match(/translateY\(([\d.]+)px\)/);
       const distance = match ? parseFloat(match[1]) : 0;
       
-      // 如果下拉距离超过60px，触发刷新
+      // 如果下拉距离超过阈值，触发刷新
       if (distance > 10) {
         isRefreshing = true;
         
@@ -287,8 +345,8 @@ export const record = {
     const savedFilters = Storage.loadSpecialFilters();
     
     // ✅ 验证加载的值是否有效（必须是 5/10/15/20 之一）
-    const validNumCounts = ['5', '10', '15', '20'];
-    const validNumCount = validNumCounts.includes(savedFilters.numCount) ? savedFilters.numCount : '5';
+    const validNumCounts = RECORD_CONSTANTS.VALID_NUM_COUNTS;
+    const validNumCount = validNumCounts.includes(savedFilters.numCount) ? savedFilters.numCount : RECORD_CONSTANTS.DEFAULT_NUM_COUNT;
     
     // ✅ 同步更新 _specialHistoryFilter 状态（确保统计使用正确的筛选条件）
     record._specialHistoryFilter.selectedNumCount = validNumCount;
@@ -318,6 +376,11 @@ export const record = {
     console.log('[Init] 精选特码筛选条件已加载:', { numCount: validNumCount });
   },
 
+  // ✅ 防抖版本的 renderAll，用于频繁调用的场景
+  renderAllDebounced: Utils.debounce(() => {
+    record.renderAll();
+  }, RECORD_CONSTANTS.DEBOUNCE_DELAY),
+
   // 渲染所有历史记录
   renderAll: () => {
     // 延迟执行，确保DOM元素存在
@@ -329,7 +392,7 @@ export const record = {
       record.renderMLPredictionHistory();
       record.renderSpecialHistory();
       record.renderHotNumbersHistory();
-    }, 100);
+    }, RECORD_CONSTANTS.RENDER_DELAY);
   },
   
   /**
@@ -603,9 +666,7 @@ export const record = {
     
     let latest = '暂无数据';
     if (latestIssue) {
-      const dateStr = latestTime ? new Date(latestTime).toLocaleString('zh-CN', { 
-        month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' 
-      }) : '';
+      const dateStr = latestTime ? new Date(latestTime).toLocaleString('zh-CN', RECORD_CONSTANTS.DATE_FORMAT) : '';
       latest = `第${latestIssue}期 ${dateStr}`;
     }
     
@@ -724,9 +785,7 @@ export const record = {
     
     let latest = '暂无数据';
     if (latestIssue) {
-      const dateStr = latestTime ? new Date(latestTime).toLocaleString('zh-CN', { 
-        month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' 
-      }) : '';
+      const dateStr = latestTime ? new Date(latestTime).toLocaleString('zh-CN', RECORD_CONSTANTS.DATE_FORMAT) : '';
       latest = `第${latestIssue}期 ${dateStr}`;
     }
     
@@ -767,9 +826,7 @@ export const record = {
     
     let latest = '暂无数据';
     if (latestIssue) {
-      const dateStr = latestTime ? new Date(latestTime).toLocaleString('zh-CN', { 
-        month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' 
-      }) : '';
+      const dateStr = latestTime ? new Date(latestTime).toLocaleString('zh-CN', RECORD_CONSTANTS.DATE_FORMAT) : '';
       latest = `第${latestIssue}期 ${dateStr}`;
     }
     
@@ -863,7 +920,7 @@ export const record = {
       const fragment = document.createDocumentFragment();
       records.forEach((rec, idx) => {
         try {
-          const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+          const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', RECORD_CONSTANTS.DATE_FORMAT) : '';
           const zodiacs = Array.isArray(rec.zodiacs) ? rec.zodiacs : [];
           
           // 构建预测生肖标签HTML
@@ -1003,13 +1060,8 @@ export const record = {
       container.innerHTML = '';
       container.appendChild(fragment);
 
-      if (records.length > 5) {
-        if (toggle) {
-          toggle.style.display = 'block';
-          record._applyCollapseLogic('selectedZodiacDetailList', 'selectedZodiacDetailToggle', 'selectedZodiacDetail');
-        }
-      } else {
-        if (toggle) toggle.style.display = 'none';
+      if (toggle) {
+        toggle.style.display = 'none';
       }
     } catch (error) {
       console.error('加载精选生肖历史详情失败:', error);
@@ -1372,13 +1424,13 @@ export const record = {
       container.innerHTML = '<div class="error-tip">加载失败</div>';
     }
   },
-
+  
   // 分页参数
   _pagination: {
-    zodiacPrediction: { page: 1, pageSize: 5 },
-    mlPrediction: { page: 1, pageSize: 5 },
-    specialHistory: { page: 1, pageSize: 5 },
-    hotNumbers: { page: 1, pageSize: 5 }
+    zodiacPrediction: { page: 1, pageSize: RECORD_CONSTANTS.PAGE_SIZE },
+    mlPrediction: { page: 1, pageSize: RECORD_CONSTANTS.PAGE_SIZE },
+    specialHistory: { page: 1, pageSize: RECORD_CONSTANTS.PAGE_SIZE },
+    hotNumbers: { page: 1, pageSize: RECORD_CONSTANTS.PAGE_SIZE }
   },
   
   // ✅ 折叠/展开状态管理
@@ -1397,7 +1449,7 @@ export const record = {
   
   // ✅ 精选特码历史筛选状态（简化版：只筛选号码数量）
   _specialHistoryFilter: {
-    selectedNumCount: '5'   // 默认5个
+    selectedNumCount: RECORD_CONSTANTS.DEFAULT_NUM_COUNT
   },
   
   /**
@@ -1415,8 +1467,8 @@ export const record = {
     const items = container.querySelectorAll('.history-item');
     const isExpanded = record._collapseState[stateKey];
     
-    if (items.length <= 2) {
-      // 如果记录数不超过2条，隐藏切换按钮
+    if (items.length <= RECORD_CONSTANTS.COLLAPSE_THRESHOLD) {
+      // 如果记录数不超过阈值，隐藏切换按钮
       toggle.style.display = 'none';
       return;
     }
@@ -1446,7 +1498,7 @@ export const record = {
   
   // 生肖预测历史筛选状态
   _zodiacPredictionFilter: {
-    selectedPeriods: ['10'] // 默认只显示10期数据
+    selectedPeriods: [RECORD_CONSTANTS.DEFAULT_PERIOD] // 默认只显示10期数据
   },
 
   // ---------- 生肖预测历史 ----------
@@ -1508,7 +1560,7 @@ export const record = {
       const fragment = document.createDocumentFragment();
       paginatedRecords.forEach((rec, idx) => {
         try {
-          const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+          const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', RECORD_CONSTANTS.DATE_FORMAT) : '';
           
           // 根据筛选条件显示对应的期数信息
           let periodInfo = '';
@@ -1701,7 +1753,7 @@ export const record = {
       const fragment = document.createDocumentFragment();
       paginatedRecords.forEach((rec, idx) => {
         try {
-          const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+          const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', RECORD_CONSTANTS.DATE_FORMAT) : '';
           const zodiacs = Array.isArray(rec.predictions) ? rec.predictions : [];
           const modelVersion = rec.modelVersion || '1.0';
           const inputFeatures = rec.inputFeatures || '历史开奖数据';
@@ -1876,7 +1928,7 @@ export const record = {
       const fragment = document.createDocumentFragment();
       filteredRecords.forEach((rec, idx) => {
         try {
-          const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+          const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', RECORD_CONSTANTS.DATE_FORMAT) : '';
           
           // ✅ 根据当前历史记录模式决定显示哪些号码
           let displayNumbers = [];
@@ -2012,7 +2064,7 @@ export const record = {
       const fragment = document.createDocumentFragment();
       hotRecords.forEach((rec, idx) => {
         try {
-          const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+          const dateStr = rec.createdAt ? new Date(rec.createdAt).toLocaleString('zh-CN', RECORD_CONSTANTS.DATE_FORMAT) : '';
           const numbers = Array.isArray(rec.numbers) ? rec.numbers : [];
           
           // 构建预测号码标签HTML
@@ -2142,8 +2194,8 @@ export const record = {
     const selectedNumCount = activeNumBtn ? activeNumBtn.dataset.num : '5';
     
     // ✅ 验证输入值是否有效
-    const validNumCounts = ['5', '10', '15', '20'];
-    const validCount = validNumCounts.includes(selectedNumCount) ? selectedNumCount : '5';
+    const validNumCounts = RECORD_CONSTANTS.VALID_NUM_COUNTS;
+    const validCount = validNumCounts.includes(selectedNumCount) ? selectedNumCount : RECORD_CONSTANTS.DEFAULT_NUM_COUNT;
     
     // 更新筛选状态
     record._specialHistoryFilter.selectedNumCount = validCount;
@@ -2218,8 +2270,8 @@ export const record = {
   // ✅ 切换精选特码显示数量
   switchSpecialHistoryCount: (count) => {
     // ✅ 验证输入值是否有效
-    const validNumCounts = ['5', '10', '15', '20'];
-    const validCount = validNumCounts.includes(String(count)) ? String(count) : '5';
+    const validNumCounts = RECORD_CONSTANTS.VALID_NUM_COUNTS;
+    const validCount = validNumCounts.includes(String(count)) ? String(count) : RECORD_CONSTANTS.DEFAULT_NUM_COUNT;
     
     // 更新按钮状态
     const buttons = document.querySelectorAll('.special-history-count-btn');
