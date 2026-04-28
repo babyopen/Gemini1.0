@@ -138,6 +138,12 @@ export const analysisCalc = {
   // 五维度评分
   calcContinuousScores: (data) => _calcContinuousScores(data),
 
+  // 获取五行
+  getWuxing: (number) => {
+    const element = Object.keys(CONFIG.ELEMENT_MAP).find(e => CONFIG.ELEMENT_MAP[e].includes(number));
+    return element || '金';
+  },
+
   // 热门/冷号号码
   getHotNumbers: (data, targetCount, fullNumZodiacMap) => {
     const state = StateManager._state;
