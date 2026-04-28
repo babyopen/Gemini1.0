@@ -137,9 +137,9 @@ export const Utils = {
     _currentX: {},
     _currentY: {},
     _startTime: {},
-    _threshold: 100, // 触发删除的滑动距离阈值（100px）
-    _directionThreshold: 20, // 方向判断阈值（20px）
-    _maxAngle: 35, // 最大允许角度（35度）
+    _threshold: 80, // 降低触发删除的滑动距离阈值（从100px降到80px）
+    _directionThreshold: 15, // 降低方向判断阈值（从20px降到15px）
+    _maxAngle: 40, // 增大最大允许角度（从35度增加到40度）
     _isHorizontal: {},
     _hasDirection: {},
     _isLeftSwipe: {}, // 是否为向左滑动
@@ -362,8 +362,15 @@ export const Utils = {
     
     // ✅ 显示删除确认弹窗
     _showDeleteConfirmDialog: (item, deleteCallback) => {
+      // 检查是否已经有弹窗存在，避免重复显示
+      const existingOverlay = document.querySelector('.delete-confirm-overlay');
+      if (existingOverlay) {
+        return;
+      }
+      
       // 创建弹窗
       const overlay = document.createElement('div');
+      overlay.className = 'delete-confirm-overlay';
       overlay.style.cssText = `
         position: fixed;
         top: 0;
@@ -421,7 +428,9 @@ export const Utils = {
       const cancelBtn = dialog.querySelector('.cancel-delete-btn');
       const handleCancel = () => {
         Utils._closeDeleteDialog(overlay);
-        Utils._hideDeleteButton(item);
+        if (item) {
+          Utils._hideDeleteButton(item);
+        }
         if (typeof Toast !== 'undefined') {
           Toast.show('已取消删除');
         }
@@ -436,7 +445,9 @@ export const Utils = {
       const confirmBtn = dialog.querySelector('.confirm-delete-btn');
       const handleConfirm = () => {
         Utils._closeDeleteDialog(overlay);
-        Utils._performDelete(item, deleteCallback);
+        if (item && deleteCallback) {
+          Utils._performDelete(item, deleteCallback);
+        }
       };
       confirmBtn.addEventListener('click', handleConfirm);
       confirmBtn.addEventListener('touchend', (e) => {
@@ -448,7 +459,9 @@ export const Utils = {
       const handleOverlayClick = (e) => {
         if (e.target === overlay) {
           Utils._closeDeleteDialog(overlay);
-          Utils._hideDeleteButton(item);
+          if (item) {
+            Utils._hideDeleteButton(item);
+          }
           if (typeof Toast !== 'undefined') {
             Toast.show('已取消删除');
           }
@@ -529,6 +542,12 @@ export const Utils = {
           this._isLeftSwipe[key] = deltaX < 0;
           
           if (!isHorizontal || deltaX >= 0) {
+            // 如果不是水平滑动或不是向左滑动，恢复原位
+            const item = e.currentTarget;
+            if (item) {
+              item.style.transform = 'translateX(0)';
+              item.style.transition = 'transform 0.3s ease-out';
+            }
             return;
           }
         }
@@ -572,7 +591,9 @@ export const Utils = {
       this._hideDeleteIndicator(item);
       
       // 移除 will-change 提示
-      item.style.willChange = 'auto';
+      if (item) {
+        item.style.willChange = 'auto';
+      }
       
       const deltaX = this._currentX[key] - this._startX[key];
       const deltaTime = Date.now() - this._startTime[key];
@@ -582,14 +603,16 @@ export const Utils = {
       if (!this._isHorizontal[key] || 
           !this._isLeftSwipe[key]) {
         // 不是向左滑动，恢复原位
-        item.style.transform = 'translateX(0)';
-        item.style.transition = 'transform 0.3s ease-out';
+        if (item) {
+          item.style.transform = 'translateX(0)';
+          item.style.transition = 'transform 0.3s ease-out';
+        }
         this._cleanup(key);
         return;
       }
       
       const isQuickSwipe = deltaTime < 200 && deltaX < -40;
-      const isLongSwipe = deltaX <= -this._threshold;
+      const isLongSwipe = Math.abs(deltaX) >= this._threshold;
       
       console.log(`[SwipeDelete] Swipe detected - isQuickSwipe: ${isQuickSwipe}, isLongSwipe: ${isLongSwipe}`);
       
@@ -599,8 +622,10 @@ export const Utils = {
         this._showDeleteButton(item, deleteCallback);
       } else {
         // 滑动不够，恢复原位
-        item.style.transform = 'translateX(0)';
-        item.style.transition = 'transform 0.3s ease-out';
+        if (item) {
+          item.style.transform = 'translateX(0)';
+          item.style.transition = 'transform 0.3s ease-out';
+        }
       }
       
       this._cleanup(key);

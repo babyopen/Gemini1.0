@@ -2938,13 +2938,31 @@ export const record = {
     const handler = Utils.SwipeDeleteHandler;
     
     // 使用 passive 选项优化触摸性能
-    const touchStartHandler = (e) => handler.handleTouchStart(e, idx, type);
-    const touchMoveHandler = (e) => handler.handleTouchMove(e, idx, type);
-    const touchEndHandler = (e) => handler.handleTouchEnd(e, idx, type, deleteCallback);
+    const touchStartHandler = (e) => {
+      // 确保事件目标是item本身或其子元素
+      if (!item.contains(e.target) && e.target !== item) {
+        return;
+      }
+      handler.handleTouchStart(e, idx, type);
+    };
+    const touchMoveHandler = (e) => {
+      // 确保事件目标是item本身或其子元素
+      if (!item.contains(e.target) && e.target !== item) {
+        return;
+      }
+      handler.handleTouchMove(e, idx, type);
+    };
+    const touchEndHandler = (e) => {
+      // 确保事件目标是item本身或其子元素
+      if (!item.contains(e.target) && e.target !== item) {
+        return;
+      }
+      handler.handleTouchEnd(e, idx, type, deleteCallback);
+    };
     
-    item.addEventListener('touchstart', touchStartHandler, { passive: true });
+    item.addEventListener('touchstart', touchStartHandler, { passive: false });
     item.addEventListener('touchmove', touchMoveHandler, { passive: false });
-    item.addEventListener('touchend', touchEndHandler, { passive: true });
+    item.addEventListener('touchend', touchEndHandler, { passive: false });
     
     // 存储处理器引用，便于后续清理（防止内存泄漏）
     record._swipeHandlers.set(item, {
