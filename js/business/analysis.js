@@ -5,7 +5,7 @@ import { CONFIG } from '../config.js';
 import { StateManager } from '../state-manager.js';
 import { Storage } from '../storage.js';
 import { Toast } from '../toast.js';
-import { IssueManager } from '../issue-manager.js';
+import { IssueManager } from './issue-manager.js';
 import { dataFetch } from './analysis/modules/data-fetch.js';
 import { analysisCalc } from './analysis/modules/analysis-calc.js';
 import { analysisRender } from './analysis/modules/analysis-render.js';
