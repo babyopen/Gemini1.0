@@ -160,12 +160,12 @@
 }
 
 .ball {
-  width: clamp(32px, 10vw, 48px);
-  height: clamp(32px, 10vw, 48px);
+  width: clamp(30px, 11vw, 44px);
+  height: clamp(30px, 11vw, 44px);
   border-radius: 50%;
   color: #fff;
   font-weight: 700;
-  font-size: clamp(14px, 5vw, 22px);
+  font-size: clamp(15px, 5.5vw, 22px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -177,7 +177,7 @@
 .ball.green { background: radial-gradient(circle at 30% 30%, #73d13d, #389e0d); }
 
 .ball-zodiac {
-  font-size: clamp(13px, 4vw, 18px);
+  font-size: clamp(14px, 4.5vw, 18px);
   color: var(--sub-text);
   font-weight: 600;
   white-space: nowrap;
@@ -734,8 +734,8 @@
 }
 
 .history-item .ball {
-  width: clamp(32px, 10vw, 48px);
-  height: clamp(32px, 10vw, 48px);
+  width: clamp(30px, 11vw, 48px);
+  height: clamp(30px, 11vw, 48px);
   font-size: clamp(16px, 6vw, 24px);
   flex-shrink: 0;
   border-radius: 50%;
@@ -752,7 +752,7 @@
 .history-item .ball.green { background: radial-gradient(circle at 30% 30%, #73d13d, #389e0d); }
 
 .history-item .ball-zodiac {
-  font-size: clamp(14px, 4.5vw, 18px);
+  font-size: clamp(15px, 5vw, 18px);
   color: var(--sub-text);
   font-weight: 600;
   white-space: nowrap;
@@ -1001,9 +1001,9 @@
 
 .final-recommend-z .ball,
 .analysis-item-full .ball {
-  width: clamp(28px, 8vw, 38px);
-  height: clamp(28px, 8vw, 38px);
-  font-size: clamp(13px, 4vw, 17px);
+  width: clamp(26px, 9vw, 38px);
+  height: clamp(26px, 9vw, 38px);
+  font-size: clamp(12px, 4vw, 17px);
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
 
@@ -1014,7 +1014,7 @@
 
 .final-recommend-z .ball-zodiac,
 .analysis-item-full .ball-zodiac {
-  font-size: clamp(10px, 2.8vw, 13px);
+  font-size: clamp(10px, 3vw, 13px);
   font-weight: 500;
 }
 
