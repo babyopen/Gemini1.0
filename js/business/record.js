@@ -1161,13 +1161,8 @@ export const record = {
       container.innerHTML = '';
       container.appendChild(fragment);
 
-      if (mlRecords.length > 5) {
-        if (toggle) {
-          toggle.style.display = 'block';
-          record._applyCollapseLogic('mlPredictionDetailList', 'mlPredictionDetailToggle', 'mlPredictionDetail');
-        }
-      } else {
-        if (toggle) toggle.style.display = 'none';
+      if (toggle) {
+        toggle.style.display = 'none';
       }
     } catch (error) {
       console.error('加载ML预测历史详情失败:', error);
@@ -1244,13 +1239,8 @@ export const record = {
       container.innerHTML = '';
       container.appendChild(fragment);
 
-      if (zodiacRecords.length > 5) {
-        if (toggle) {
-          toggle.style.display = 'block';
-          record._applyCollapseLogic('zodiacPredictionDetailList', 'zodiacPredictionDetailToggle', 'zodiacPredictionDetail');
-        }
-      } else {
-        if (toggle) toggle.style.display = 'none';
+      if (toggle) {
+        toggle.style.display = 'none';
       }
     } catch (error) {
       console.error('加载生肖预测历史详情失败:', error);
@@ -1324,13 +1314,8 @@ export const record = {
       container.innerHTML = '';
       container.appendChild(fragment);
 
-      if (hotRecords.length > 5) {
-        if (toggle) {
-          toggle.style.display = 'block';
-          record._applyCollapseLogic('hotNumbersDetailList', 'hotNumbersDetailToggle', 'hotNumbersDetail');
-        }
-      } else {
-        if (toggle) toggle.style.display = 'none';
+      if (toggle) {
+        toggle.style.display = 'none';
       }
     } catch (error) {
       console.error('加载特码热门历史详情失败:', error);
@@ -1411,13 +1396,8 @@ export const record = {
       container.innerHTML = '';
       container.appendChild(fragment);
 
-      if (specialRecords.length > 5) {
-        if (toggle) {
-          toggle.style.display = 'block';
-          record._applyCollapseLogic('specialDetailList', 'specialDetailToggle', 'specialDetail');
-        }
-      } else {
-        if (toggle) toggle.style.display = 'none';
+      if (toggle) {
+        toggle.style.display = 'none';
       }
     } catch (error) {
       console.error('加载精选特码历史详情失败:', error);

@@ -207,12 +207,12 @@
   box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
 }
 
-.history-tag.history-tag-miss {
-  background: linear-gradient(135deg, var(--danger) 0%, #ff3b30 100%);
+.history-tag.history-tag-miss,
+div.history-tag.history-tag-actual.history-tag-miss {
+  background: #c0392b !important;
   color: white;
-  border: none;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(255, 59, 48, 0.4);
+  border: 2px solid #e74c3c;
+  font-weight: 700;
 }
 
 @media (prefers-color-scheme: dark) {
