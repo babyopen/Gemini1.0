@@ -380,6 +380,7 @@ export const Utils = {
       `;
       
       const dialog = document.createElement('div');
+      dialog.className = 'dialog-content';
       dialog.style.cssText = `
         background: var(--card);
         border-radius: 16px;
@@ -418,35 +419,33 @@ export const Utils = {
       
       // 取消按钮
       const cancelBtn = dialog.querySelector('.cancel-delete-btn');
-      cancelBtn.onmouseenter = () => {
-        cancelBtn.style.background = 'var(--border)';
-      };
-      cancelBtn.onmouseleave = () => {
-        cancelBtn.style.background = 'var(--bg)';
-      };
-      cancelBtn.onclick = () => {
+      const handleCancel = () => {
         Utils._closeDeleteDialog(overlay);
         Utils._hideDeleteButton(item);
         if (typeof Toast !== 'undefined') {
           Toast.show('已取消删除');
         }
       };
+      cancelBtn.addEventListener('click', handleCancel);
+      cancelBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleCancel();
+      });
       
       // 确认按钮
       const confirmBtn = dialog.querySelector('.confirm-delete-btn');
-      confirmBtn.onmouseenter = () => {
-        confirmBtn.style.background = '#ff2419';
-      };
-      confirmBtn.onmouseleave = () => {
-        confirmBtn.style.background = '#ff3b30';
-      };
-      confirmBtn.onclick = () => {
+      const handleConfirm = () => {
         Utils._closeDeleteDialog(overlay);
         Utils._performDelete(item, deleteCallback);
       };
+      confirmBtn.addEventListener('click', handleConfirm);
+      confirmBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleConfirm();
+      });
       
       // 点击背景关闭
-      overlay.onclick = (e) => {
+      const handleOverlayClick = (e) => {
         if (e.target === overlay) {
           Utils._closeDeleteDialog(overlay);
           Utils._hideDeleteButton(item);
@@ -455,21 +454,38 @@ export const Utils = {
           }
         }
       };
+      overlay.addEventListener('click', handleOverlayClick);
     },
     
     // ✅ 关闭删除弹窗
     _closeDeleteDialog: (overlay) => {
-      if (!overlay) return;
+      if (!overlay || !overlay.parentNode) return;
       
-      const dialog = overlay.querySelector('div:last-child');
-      if (dialog) {
+      const dialog = overlay.querySelector('div.dialog-content');
+      if (!dialog) {
+        overlay.remove();
+        return;
+      }
+      
+      try {
         overlay.style.opacity = '0';
         dialog.style.transform = 'scale(0.9)';
         setTimeout(() => {
-          if (overlay.parentNode) {
-            overlay.remove();
+          try {
+            if (overlay.parentNode) {
+              overlay.remove();
+            }
+          } catch (e) {
+            console.warn('[Utils] 移除弹窗失败:', e);
           }
         }, 200);
+      } catch (e) {
+        console.error('[Utils] 关闭弹窗失败:', e);
+        try {
+          overlay.remove();
+        } catch (e2) {
+          // ignore
+        }
       }
     },
 
@@ -487,8 +503,6 @@ export const Utils = {
       this._isHorizontal[key] = false;
       this._hasDirection[key] = false;
       this._isLeftSwipe[key] = false;
-      
-      console.log(`[SwipeDelete] touchstart - key: ${key}, x: ${touch.clientX}, y: ${touch.clientY}`);
     },
 
     handleTouchMove: function(e, idx, prefix) {
@@ -498,9 +512,6 @@ export const Utils = {
       if (!e || !e.touches || e.touches.length === 0) return;
       
       const touch = e.touches[0];
-      this._currentX[key] = touch.clientX;
-      this._currentY[key] = touch.clientY;
-      
       const deltaX = touch.clientX - this._startX[key];
       const deltaY = touch.clientY - this._startY[key];
       const absDeltaX = Math.abs(deltaX);
@@ -533,25 +544,24 @@ export const Utils = {
       const item = e.currentTarget;
       if (!item) return;
       
-      // 检查是否已有删除按钮，如果有则不再处理滑动
       const existingBtn = item.querySelector('.swipe-delete-btn');
       if (existingBtn) return;
       
       const progress = Math.min(absDeltaX / this._threshold, 1);
-      
-      this._showDeleteIndicator(item, progress);
-      
-      // 使用 GPU 加速的 transform，并限制最大位移
       const translateX = Math.max(deltaX * 0.5, -80);
-      item.style.transform = `translateX(${translateX}px)`;
-      // 移除 transition 以提高流畅度
-      item.style.willChange = 'transform';
       
-      const indicator = item.querySelector('.swipe-delete-indicator');
-      if (indicator && absDeltaX >= this._threshold) {
-        indicator.style.background = 'linear-gradient(to bottom, #ff453a, #ff3b30)';
-        indicator.style.boxShadow = '0 0 8px rgba(255, 59, 48, 0.6)';
-      }
+      const self = this;
+      requestAnimationFrame(() => {
+        self._showDeleteIndicator(item, progress);
+        item.style.willChange = 'transform';
+        item.style.transform = `translateX(${translateX}px)`;
+        
+        const indicator = item.querySelector('.swipe-delete-indicator');
+        if (indicator && absDeltaX >= self._threshold) {
+          indicator.style.background = 'linear-gradient(to bottom, #ff453a, #ff3b30)';
+          indicator.style.boxShadow = '0 0 8px rgba(255, 59, 48, 0.6)';
+        }
+      });
     },
 
     handleTouchEnd: function(e, idx, prefix, deleteCallback) {
