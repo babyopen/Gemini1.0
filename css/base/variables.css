@@ -50,7 +50,28 @@
   --radius-sm:8px;
   --radius:12px;
   --radius-lg:16px;
-  --ball-size:28px;
+  
+  /* ========== 球号尺寸系统 ========== */
+  /* 自适应球号尺寸：小屏30px，中屏根据视口10%增长，大屏最大48px */
+  --ball-size-min: 30px;           /* 小屏最小尺寸 */
+  --ball-size-vw: 11vw;             /* 随视口宽度增长比例 */
+  --ball-size-max: 48px;            /* 大屏最大尺寸 */
+  
+  /* 球号字体尺寸：小屏15px，中屏5.5%增长，大屏最大22px */
+  --ball-font-min: 15px;           /* 小屏最小字体 */
+  --ball-font-vw: 5.5vw;           /* 随视口宽度增长比例 */
+  --ball-font-max: 22px;           /* 大屏最大字体 */
+  
+  /* 生肖文字尺寸：小屏14px，中屏4.5%增长，大屏最大18px */
+  --ball-zodiac-min: 14px;         /* 小屏最小字体 */
+  --ball-zodiac-vw: 4.5vw;         /* 随视口宽度增长比例 */
+  --ball-zodiac-max: 18px;         /* 大屏最大字体 */
+  
+  /* 球号尺寸（小屏优先版）：小屏30px，中屏11%增长，大屏最大44px */
+  --ball-size-sm-min: 30px;        /* 小屏最小尺寸（主页面用） */
+  --ball-size-sm-vw: 11vw;        /* 随视口宽度增长比例 */
+  --ball-size-sm-max: 44px;       /* 大屏最大尺寸 */
+  --ball-size: var(--ball-size-min); /* 兼容旧代码 */
   /* 安全区变量 */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
