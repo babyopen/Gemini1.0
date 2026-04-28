@@ -528,17 +528,16 @@ export const prediction = {
     const periods = [10, 20, 30];
     const result = new Map();
     
-    periods.forEach((period, periodIndex) => {
-      const rankedZodiacs = analysisCalc.calcSelectedZodiacsV3(period);
-      if (rankedZodiacs && rankedZodiacs.length > 0) {
-        rankedZodiacs.slice(0, 3).forEach((item) => {
-          if (!result.has(item.zodiac)) {
-            result.set(item.zodiac, []);
-          }
-          result.get(item.zodiac).push(periodIndex + 1);
-        });
-      }
-    });
+    // 使用30期数据的前6名作为精选生肖，与分析页面保持一致
+    const rankedZodiacs = analysisCalc.calcSelectedZodiacsV3(30);
+    if (rankedZodiacs && rankedZodiacs.length > 0) {
+      const topZodiacs = rankedZodiacs.slice(0, 6); // 取前6名
+      topZodiacs.forEach((item) => {
+        if (!result.has(item.zodiac)) {
+          result.set(item.zodiac, []);
+        }
+      });
+    }
     
     return result;
   },
