@@ -167,6 +167,13 @@ export const analysisCalc = {
     return calcSelectedZodiacsV2(historyData, periodLimit);
   },
 
+  // 精选生肖 V3（使用30期数据）
+  calcSelectedZodiacsV3: (periodLimit = 30) => {
+    const state = StateManager._state;
+    const { historyData } = state.analysis;
+    return calcSelectedZodiacsV2(historyData, periodLimit);
+  },
+
   getSelectedZodiacsWithPeriods: (periodLimit) => {
     const periodOptions = [10, 20, 30];
     const result = new Map();
