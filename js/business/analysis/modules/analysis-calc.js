@@ -545,9 +545,13 @@ export const analysisCalc = {
    * @returns {Array} 号码数组
    */
   getHotNumbers: (data, targetCount, fullNumZodiacMap) => {
-    // 适配两种数据结构：精选特码的完整数据结构 和 综合分析的简化数据结构
-    
-    // 锁定核心生肖池：优先使用精选生肖，若没有则使用预测高分的前6个生肖
+    const state = StateManager._state;
+    const historyData = state.analysis?.historyData || [];
+
+    if (historyData.length > 0) {
+      return analysisCalc.getHotNumbersV2(historyData, targetCount, fullNumZodiacMap);
+    }
+
     let coreZodiacs = [];
     
     // 首先尝试使用精选生肖
@@ -2026,5 +2030,600 @@ export const analysisCalc = {
     });
 
     return candidateNums.slice(0, targetCount).map(item => item.num);
+  },
+
+  // ====================== 特码热门TOP5全新推演算法 ======================
+
+  /**
+   * 【步骤1】全网历史特码数据建档
+   * 统计每个生肖和数字的总开出次数，标记热/温/冷码
+   * @param {Array} historyData - 历史数据
+   * @param {number} periodLimit - 分析期数限制
+   * @returns {Object} 建档数据
+   */
+  buildSpecialCodeHistory: (historyData, periodLimit = 'all') => {
+    const state = StateManager._state;
+    const fullNumZodiacMap = state.config?.fullNumZodiacMap || new Map();
+
+    let list = historyData.slice(0, Math.min(periodLimit, historyData.length));
+
+    if (periodLimit === 'all' || periodLimit === 365) {
+      const currentLunarYear = analysisCalc.getCurrentLunarYear();
+      list = historyData.filter(item => {
+        const itemLunarYear = analysisCalc.getLunarYearByDate(item.date);
+        return itemLunarYear === currentLunarYear;
+      }).slice(0, periodLimit === 'all' ? 365 : periodLimit);
+    }
+
+    const zodiacStats = {};
+    const numStats = {};
+    const zodiacMiss = {};
+
+    CONFIG.ANALYSIS.ZODIAC_ALL.forEach(z => zodiacStats[z] = 0);
+    for (let i = 1; i <= 49; i++) numStats[i] = 0;
+
+    list.forEach((item, idx) => {
+      const special = analysisCalc.getSpecial(item);
+      if (special && special.te) {
+        const num = special.te;
+        const zodiac = special.zod;
+
+        if (zodiac && zodiacStats[zodiac] !== undefined) {
+          zodiacStats[zodiac]++;
+        }
+
+        if (num >= 1 && num <= 49) {
+          numStats[num]++;
+        }
+      }
+    });
+
+    Object.keys(zodiacStats).forEach(z => {
+      zodiacMiss[z] = list.length - zodiacStats[z];
+    });
+
+    const avgZodiacCount = list.length / 12;
+    const avgNumCount = list.length / 49;
+
+    const zodiacHeatLevel = {};
+    Object.entries(zodiacStats).forEach(([z, count]) => {
+      if (count > avgZodiacCount * 1.3) zodiacHeatLevel[z] = 'hot';
+      else if (count > avgZodiacCount * 0.7) zodiacHeatLevel[z] = 'warm';
+      else zodiacHeatLevel[z] = 'cold';
+    });
+
+    const numHeatLevel = {};
+    Object.entries(numStats).forEach(([num, count]) => {
+      if (count > avgNumCount * 1.3) numHeatLevel[num] = 'hot';
+      else if (count > avgNumCount * 0.7) numHeatLevel[num] = 'warm';
+      else numHeatLevel[num] = 'cold';
+    });
+
+    return {
+      zodiacStats,
+      numStats,
+      zodiacMiss,
+      zodiacHeatLevel,
+      numHeatLevel,
+      totalPeriods: list.length,
+      avgZodiacCount,
+      avgNumCount
+    };
+  },
+
+  /**
+   * 【步骤2】热号惯性延续算法
+   * 连开生肖标记为一级热度权重，防止热号立即断档
+   * @param {Array} recentPeriods - 最近N期数据（至少需要上期和上上期）
+   * @param {Object} zodiacStats - 生肖统计数据
+   * @returns {Object} 热号惯性数据
+   */
+  calcHotNumberInertia: (recentPeriods, zodiacStats) => {
+    const inertiaWeight = {};
+
+    CONFIG.ANALYSIS.ZODIAC_ALL.forEach(z => inertiaWeight[z] = 0);
+
+    if (recentPeriods.length < 1) {
+      return { inertiaWeight, consecutiveHot: [], recentHotZodiac: null };
+    }
+
+    const recentHotZodiac = analysisCalc.getSpecial(recentPeriods[0])?.zod;
+
+    let consecutiveCount = 1;
+    if (recentPeriods.length >= 2) {
+      const firstZ = analysisCalc.getSpecial(recentPeriods[0])?.zod;
+      const secondZ = analysisCalc.getSpecial(recentPeriods[1])?.zod;
+      if (firstZ === secondZ) {
+        consecutiveCount = 2;
+        if (recentPeriods.length >= 3) {
+          const thirdZ = analysisCalc.getSpecial(recentPeriods[2])?.zod;
+          if (secondZ === thirdZ) consecutiveCount = 3;
+        }
+      }
+    }
+
+    if (recentHotZodiac && inertiaWeight[recentHotZodiac] !== undefined) {
+      inertiaWeight[recentHotZodiac] = consecutiveCount * 0.3;
+    }
+
+    const consecutiveHot = [];
+    if (recentPeriods.length >= 2) {
+      let tempZ = analysisCalc.getSpecial(recentPeriods[0])?.zod;
+      let tempCount = 1;
+      for (let i = 1; i < recentPeriods.length; i++) {
+        const currZ = analysisCalc.getSpecial(recentPeriods[i])?.zod;
+        if (currZ === tempZ) {
+          tempCount++;
+          if (tempCount >= 2) {
+            consecutiveHot.push({ zodiac: tempZ, count: tempCount });
+          }
+        } else {
+          tempZ = currZ;
+          tempCount = 1;
+        }
+      }
+    }
+
+    return {
+      inertiaWeight,
+      consecutiveHot,
+      recentHotZodiac,
+      consecutiveCount
+    };
+  },
+
+  /**
+   * 【步骤3】冷号周期回补算法
+   * 遗漏值达到临界周期，判定触发回补窗口期
+   * @param {Object} zodiacMiss - 生肖遗漏值
+   * @param {Object} numMiss - 数字遗漏值
+   * @param {number} totalPeriods - 总期数
+   * @returns {Object} 回补窗口期数据
+   */
+  calcColdReboundWindow: (zodiacMiss, numMiss, totalPeriods) => {
+    const avgMiss = totalPeriods / 12;
+    const avgNumMiss = totalPeriods / 49;
+
+    const reboundWeight = {};
+    const criticalThreshold = avgMiss * 1.5;
+    const numCriticalThreshold = avgNumMiss * 1.5;
+
+    Object.entries(zodiacMiss).forEach(([zodiac, miss]) => {
+      if (miss >= criticalThreshold) {
+        const excessRate = (miss - avgMiss) / avgMiss;
+        reboundWeight[zodiac] = Math.min(0.5, excessRate * 0.2);
+      } else {
+        reboundWeight[zodiac] = 0;
+      }
+    });
+
+    const numReboundWeight = {};
+    Object.entries(numMiss).forEach(([num, miss]) => {
+      if (miss >= numCriticalThreshold) {
+        const excessRate = (miss - avgNumMiss) / avgNumMiss;
+        numReboundWeight[num] = Math.min(0.5, excessRate * 0.2);
+      } else {
+        numReboundWeight[num] = 0;
+      }
+    });
+
+    const triggerReboundZodiacs = Object.entries(reboundWeight)
+      .filter(([_, w]) => w > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([zodiac, weight]) => ({ zodiac, weight, miss: zodiacMiss[zodiac] }));
+
+    const triggerReboundNums = Object.entries(numReboundWeight)
+      .filter(([_, w]) => w > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([num, weight]) => ({ num: parseInt(num), weight, miss: numMiss[num] }));
+
+    return {
+      reboundWeight,
+      numReboundWeight,
+      triggerReboundZodiacs,
+      triggerReboundNums,
+      criticalThreshold,
+      numCriticalThreshold
+    };
+  },
+
+  /**
+   * 【步骤4】生肖闭环轮换逻辑
+   * 热肖退场→温肖过渡→冷肖补位，循环往复
+   * @param {Object} zodiacHeatLevel - 生肖冷热级别
+   * @param {Object} zodiacStats - 生肖统计数据
+   * @param {Array} recentHotZodiacs - 最近热出的生肖
+   * @returns {Object} 轮换筛选数据
+   */
+  calcZodiacRotationCycle: (zodiacHeatLevel, zodiacStats, recentHotZodiacs) => {
+    const rotationWeight = {};
+
+    CONFIG.ANALYSIS.ZODIAC_ALL.forEach(z => rotationWeight[z] = 1.0);
+
+    const recentSet = new Set(recentHotZodiacs || []);
+
+    Object.entries(zodiacHeatLevel).forEach(([zodiac, level]) => {
+      if (level === 'hot' && recentSet.has(zodiac)) {
+        rotationWeight[zodiac] = 0.4;
+      } else if (level === 'cold') {
+        rotationWeight[zodiac] = 1.5;
+      } else if (level === 'warm') {
+        rotationWeight[zodiac] = 1.0;
+      } else if (level === 'hot') {
+        rotationWeight[zodiac] = 0.7;
+      }
+    });
+
+    const hotZodiacs = Object.entries(zodiacHeatLevel)
+      .filter(([_, level]) => level === 'hot')
+      .map(([z]) => z);
+    const coldZodiacs = Object.entries(zodiacHeatLevel)
+      .filter(([_, level]) => level === 'cold')
+      .map(([z]) => z);
+
+    const rotationPhase = hotZodiacs.length > 6 ? '热肖退场期' :
+                          coldZodiacs.length > 6 ? '冷肖补位期' : '温肖过渡期';
+
+    return {
+      rotationWeight,
+      hotZodiacs,
+      coldZodiacs,
+      rotationPhase
+    };
+  },
+
+  /**
+   * 【步骤5】最终一精三筛选定稿
+   * 综合权重排序，精选1个独胆+3个备选
+   * @param {Array} candidateNums - 候选号码池
+   * @param {Object} weights - 各维度权重
+   * @param {number} targetCount - 目标数量
+   * @returns {Array} 最终精选号码
+   */
+  finalSelection: (candidateNums, weights, targetCount = 4) => {
+    const scored = candidateNums.map(num => {
+      const inertia = weights.inertiaWeight?.[weights.targetZodiacs?.find(z => weights.fullNumZodiacMap?.get(num) === z)] || 0;
+      const rebound = weights.numReboundWeight?.[num] || 0;
+      const rotation = weights.rotationWeight?.[weights.fullNumZodiacMap?.get(num)] || 1.0;
+      const heat = weights.numHeatLevel?.[num] === 'hot' ? 0.8 :
+                   weights.numHeatLevel?.[num] === 'warm' ? 1.0 : 1.2;
+
+      const totalScore = (heat * 0.3 + inertia * 0.25 + rebound * 0.25 + rotation * 0.2) * 100;
+
+      return {
+        num,
+        totalScore,
+        breakdown: { heat, inertia, rebound, rotation }
+      };
+    });
+
+    scored.sort((a, b) => b.totalScore - a.totalScore);
+
+    const finalNums = scored.slice(0, targetCount);
+
+    return {
+      primary: finalNums[0]?.num || null,
+      backups: finalNums.slice(1).map(item => item.num),
+      all: finalNums.map(item => item.num),
+      detail: finalNums
+    };
+  },
+
+  /**
+   * 【主入口】特码热门TOP5全新推演算法
+   * 整合五大步骤，输出完整推演结果
+   * @param {Array} historyData - 历史数据
+   * @param {number} targetCount - 目标数量
+   * @param {Map} fullNumZodiacMap - 号码生肖映射
+   * @returns {Array} 精选号码数组
+   */
+  getHotNumbersV2: (historyData, targetCount = 5, fullNumZodiacMap) => {
+    const state = StateManager._state;
+    const actualFullNumZodiacMap = fullNumZodiacMap || state.config?.fullNumZodiacMap || new Map();
+
+    const recent30 = historyData.slice(0, 30);
+    const recent10 = historyData.slice(0, 10);
+    const recent3 = historyData.slice(0, 3);
+
+    const step1Data = analysisCalc.buildSpecialCodeHistory(historyData, 'all');
+
+    const step2Data = analysisCalc.calcHotNumberInertia(recent3, step1Data.zodiacStats);
+
+    const recentHotZodiacs = recent10.map(item => analysisCalc.getSpecial(item)?.zod).filter(Boolean);
+
+    const numMiss = {};
+    for (let num = 1; num <= 49; num++) {
+      let miss = 0;
+      for (let i = 0; i < historyData.length; i++) {
+        if (analysisCalc.getSpecial(historyData[i])?.te === num) break;
+        miss++;
+      }
+      numMiss[num] = miss;
+    }
+
+    const step3Data = analysisCalc.calcColdReboundWindow(step1Data.zodiacMiss, numMiss, step1Data.totalPeriods);
+
+    const step4Data = analysisCalc.calcZodiacRotationCycle(
+      step1Data.zodiacHeatLevel,
+      step1Data.zodiacStats,
+      recentHotZodiacs
+    );
+
+    const rankedZodiacs = analysisCalc.calcSelectedZodiacsV3(30);
+    const hotZodiacs = rankedZodiacs.slice(0, 6).map(item => item.zodiac);
+
+    const tailStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+    const colorStats = { '红': 0, '蓝': 0, '绿': 0 };
+    const headStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+
+    recent10.forEach(item => {
+      const s = analysisCalc.getSpecial(item);
+      if (s.tail !== undefined) tailStats[s.tail]++;
+      if (s.colorName) colorStats[s.colorName]++;
+      if (s.head !== undefined && s.head >= 0 && s.head <= 4) headStats[s.head]++;
+    });
+
+    const hotTails = Object.entries(tailStats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(item => parseInt(item[0]));
+    const hotColors = Object.entries(colorStats).sort((a, b) => b[1] - a[1]).slice(0, 2).map(item => item[0]);
+    const hotHeads = Object.entries(headStats).sort((a, b) => b[1] - a[1]).slice(0, 3).map(item => parseInt(item[0]));
+
+    const candidateNums = [];
+    for (let num = 1; num <= 49; num++) {
+      const zodiac = actualFullNumZodiacMap.get(num);
+      if (!zodiac || !hotZodiacs.includes(zodiac)) continue;
+
+      const tail = num % 10;
+      const head = Math.floor(num / 10);
+      const colorName = analysisCalc.getColorName(num);
+
+      let matchCount = 0;
+      if (hotZodiacs.includes(zodiac)) matchCount++;
+      if (hotTails.includes(tail)) matchCount++;
+      if (hotColors.includes(colorName)) matchCount++;
+      if (hotHeads.includes(head)) matchCount++;
+
+      if (matchCount >= 3) {
+        candidateNums.push(num);
+      }
+    }
+
+    if (candidateNums.length < targetCount) {
+      for (let num = 1; num <= 49; num++) {
+        if (candidateNums.includes(num)) continue;
+        const zodiac = actualFullNumZodiacMap.get(num);
+        if (!zodiac) continue;
+
+        const tail = num % 10;
+        const head = Math.floor(num / 10);
+        const colorName = analysisCalc.getColorName(num);
+
+        let matchCount = 0;
+        if (hotZodiacs.includes(zodiac)) matchCount++;
+        if (hotTails.includes(tail)) matchCount++;
+        if (hotColors.includes(colorName)) matchCount++;
+        if (hotHeads.includes(head)) matchCount++;
+
+        if (matchCount >= 2) {
+          candidateNums.push(num);
+        }
+      }
+    }
+
+    const weights = {
+      inertiaWeight: step2Data.inertiaWeight,
+      reboundWeight: step3Data.reboundWeight,
+      numReboundWeight: step3Data.numReboundWeight,
+      rotationWeight: step4Data.rotationWeight,
+      targetZodiacs: hotZodiacs,
+      fullNumZodiacMap: actualFullNumZodiacMap,
+      numHeatLevel: step1Data.numHeatLevel
+    };
+
+    const finalResult = analysisCalc.finalSelection(candidateNums, weights, targetCount);
+
+    console.log('[特码热门V2算法] 推演完成', {
+      步骤1: { 总期数: step1Data.totalPeriods, 热肖数: Object.values(step1Data.zodiacHeatLevel).filter(v => v === 'hot').length },
+      步骤2: { 连开生肖: step2Data.recentHotZodiac, 连开次数: step2Data.consecutiveCount },
+      步骤3: { 触发回补生肖: step3Data.triggerReboundZodiacs.length, 触发回补号码: step3Data.triggerReboundNums.length },
+      步骤4: { 轮换阶段: step4Data.rotationPhase, 热肖: step4Data.hotZodiacs.length, 冷肖: step4Data.coldZodiacs.length },
+      步骤5: { 独胆: finalResult.primary, 备选: finalResult.backups }
+    });
+
+    return finalResult.all;
+  },
+
+  /**
+   * 实时刷新冷热排行回调
+   * 当新一期开奖后自动触发，更新所有冷热数据
+   * @param {Object} newResult - 最新一期开奖结果
+   * @param {Array} historyData - 更新后的历史数据
+   */
+  onNewLotteryResult: (newResult, historyData) => {
+    console.log('[特码热门V2算法] 检测到新一期开奖，开始刷新冷热排行...', newResult);
+
+    const step1Data = analysisCalc.buildSpecialCodeHistory(historyData, 'all');
+    console.log('[刷新完成] 步骤1数据已更新', {
+      总期数: step1Data.totalPeriods,
+      热肖: Object.values(step1Data.zodiacHeatLevel).filter(v => v === 'hot').length,
+      冷肖: Object.values(step1Data.zodiacHeatLevel).filter(v => v === 'cold').length
+    });
+
+    const recent3 = historyData.slice(0, 3);
+    const step2Data = analysisCalc.calcHotNumberInertia(recent3, step1Data.zodiacStats);
+    console.log('[刷新完成] 步骤2热号惯性已更新', {
+      最新热肖: step2Data.recentHotZodiac,
+      连开次数: step2Data.consecutiveCount
+    });
+
+    const numMiss = {};
+    for (let num = 1; num <= 49; num++) {
+      let miss = 0;
+      for (let i = 0; i < historyData.length; i++) {
+        if (analysisCalc.getSpecial(historyData[i])?.te === num) break;
+        miss++;
+      }
+      numMiss[num] = miss;
+    }
+
+    const step3Data = analysisCalc.calcColdReboundWindow(step1Data.zodiacMiss, numMiss, step1Data.totalPeriods);
+    console.log('[刷新完成] 步骤3冷号回补已更新', {
+      触发回补生肖数: step3Data.triggerReboundZodiacs.length,
+      触发回补号码数: step3Data.triggerReboundNums.length
+    });
+
+    const recent10 = historyData.slice(0, 10);
+    const recentHotZodiacs = recent10.map(item => analysisCalc.getSpecial(item)?.zod).filter(Boolean);
+    const step4Data = analysisCalc.calcZodiacRotationCycle(step1Data.zodiacHeatLevel, step1Data.zodiacStats, recentHotZodiacs);
+    console.log('[刷新完成] 步骤4生肖轮换已更新', {
+      轮换阶段: step4Data.rotationPhase,
+      热肖数: step4Data.hotZodiacs.length,
+      冷肖数: step4Data.coldZodiacs.length
+    });
+
+    console.log('[特码热门V2算法] ✅ 冷热排行刷新完成，准备重新计算下期推荐');
+
+    return {
+      step1Data,
+      step2Data,
+      step3Data,
+      step4Data
+    };
+  },
+
+  /**
+   * 获取特码热门TOP5推演详情报告
+   * @param {Array} historyData - 历史数据
+   * @returns {Object} 完整推演报告
+   */
+  getHotNumbersReport: (historyData) => {
+    const state = StateManager._state;
+    const fullNumZodiacMap = state.config?.fullNumZodiacMap || new Map();
+
+    const recent30 = historyData.slice(0, 30);
+    const recent10 = historyData.slice(0, 10);
+    const recent3 = historyData.slice(0, 3);
+
+    const step1Data = analysisCalc.buildSpecialCodeHistory(historyData, 'all');
+
+    const step2Data = analysisCalc.calcHotNumberInertia(recent3, step1Data.zodiacStats);
+
+    const recentHotZodiacs = recent10.map(item => analysisCalc.getSpecial(item)?.zod).filter(Boolean);
+
+    const numMiss = {};
+    for (let num = 1; num <= 49; num++) {
+      let miss = 0;
+      for (let i = 0; i < historyData.length; i++) {
+        if (analysisCalc.getSpecial(historyData[i])?.te === num) break;
+        miss++;
+      }
+      numMiss[num] = miss;
+    }
+
+    const step3Data = analysisCalc.calcColdReboundWindow(step1Data.zodiacMiss, numMiss, step1Data.totalPeriods);
+
+    const step4Data = analysisCalc.calcZodiacRotationCycle(
+      step1Data.zodiacHeatLevel,
+      step1Data.zodiacStats,
+      recentHotZodiacs
+    );
+
+    const rankedZodiacs = analysisCalc.calcSelectedZodiacsV3(30);
+    const hotZodiacs = rankedZodiacs.slice(0, 6).map(item => item.zodiac);
+
+    const tailStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+    const colorStats = { '红': 0, '蓝': 0, '绿': 0 };
+    const headStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+
+    recent10.forEach(item => {
+      const s = analysisCalc.getSpecial(item);
+      if (s.tail !== undefined) tailStats[s.tail]++;
+      if (s.colorName) colorStats[s.colorName]++;
+      if (s.head !== undefined && s.head >= 0 && s.head <= 4) headStats[s.head]++;
+    });
+
+    const hotTails = Object.entries(tailStats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(item => parseInt(item[0]));
+    const hotColors = Object.entries(colorStats).sort((a, b) => b[1] - a[1]).slice(0, 2).map(item => item[0]);
+    const hotHeads = Object.entries(headStats).sort((a, b) => b[1] - a[1]).slice(0, 3).map(item => parseInt(item[0]));
+
+    const weights = {
+      inertiaWeight: step2Data.inertiaWeight,
+      reboundWeight: step3Data.reboundWeight,
+      numReboundWeight: step3Data.numReboundWeight,
+      rotationWeight: step4Data.rotationWeight,
+      targetZodiacs: hotZodiacs,
+      fullNumZodiacMap: fullNumZodiacMap,
+      numHeatLevel: step1Data.numHeatLevel
+    };
+
+    const candidateNums = [];
+    for (let num = 1; num <= 49; num++) {
+      const zodiac = fullNumZodiacMap.get(num);
+      if (!zodiac || !hotZodiacs.includes(zodiac)) continue;
+
+      const tail = num % 10;
+      const head = Math.floor(num / 10);
+      const colorName = analysisCalc.getColorName(num);
+
+      let matchCount = 0;
+      if (hotZodiacs.includes(zodiac)) matchCount++;
+      if (hotTails.includes(tail)) matchCount++;
+      if (hotColors.includes(colorName)) matchCount++;
+      if (hotHeads.includes(head)) matchCount++;
+
+      if (matchCount >= 3) {
+        candidateNums.push(num);
+      }
+    }
+
+    if (candidateNums.length < 5) {
+      for (let num = 1; num <= 49; num++) {
+        if (candidateNums.includes(num)) continue;
+        const zodiac = fullNumZodiacMap.get(num);
+        if (!zodiac) continue;
+
+        const tail = num % 10;
+        const head = Math.floor(num / 10);
+        const colorName = analysisCalc.getColorName(num);
+
+        let matchCount = 0;
+        if (hotZodiacs.includes(zodiac)) matchCount++;
+        if (hotTails.includes(tail)) matchCount++;
+        if (hotColors.includes(colorName)) matchCount++;
+        if (hotHeads.includes(head)) matchCount++;
+
+        if (matchCount >= 2) {
+          candidateNums.push(num);
+        }
+      }
+    }
+
+    const finalResult = analysisCalc.finalSelection(candidateNums, weights, 5);
+
+    return {
+      step1: {
+        ...step1Data,
+        hotZodiacs: Object.entries(step1Data.zodiacHeatLevel)
+          .filter(([_, level]) => level === 'hot')
+          .map(([z]) => z),
+        coldZodiacs: Object.entries(step1Data.zodiacHeatLevel)
+          .filter(([_, level]) => level === 'cold')
+          .map(([z]) => z)
+      },
+      step2: {
+        ...step2Data,
+        consecutiveHot: step2Data.consecutiveHot
+      },
+      step3: {
+        ...step3Data,
+        topReboundZodiacs: step3Data.triggerReboundZodiacs.slice(0, 5),
+        topReboundNums: step3Data.triggerReboundNums.slice(0, 5)
+      },
+      step4: step4Data,
+      step5: finalResult,
+      hotTails,
+      hotColors,
+      hotHeads,
+      hotZodiacs
+    };
   }
 };

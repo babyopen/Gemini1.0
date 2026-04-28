@@ -185,8 +185,12 @@ export const Utils = {
       if (indicator) {
         indicator.style.transform = 'scaleY(0)';
         setTimeout(() => {
-          if (indicator.parentNode) {
-            indicator.remove();
+          try {
+            if (indicator.parentNode) {
+              indicator.remove();
+            }
+          } catch (e) {
+            // 元素可能已经被移除，忽略错误
           }
         }, 200);
       }
@@ -224,15 +228,27 @@ export const Utils = {
         z-index: 10;
         border-radius: 0 8px 8px 0;
         box-shadow: -2px 0 8px rgba(255, 59, 48, 0.3);
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
       `;
       deleteBtn.innerHTML = '🗑️ 删除';
       
-      // 点击删除按钮
-      deleteBtn.onclick = (e) => {
+      // 点击删除按钮 - 使用 addEventListener 以确保正确的事件处理
+      deleteBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
         // ✅ 显示自定义确认弹窗
         Utils._showDeleteConfirmDialog(item, deleteCallback);
-      };
+      }, { passive: false });
+      
+      // 确保触摸事件也能正确处理
+      deleteBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // ✅ 显示自定义确认弹窗
+        Utils._showDeleteConfirmDialog(item, deleteCallback);
+      }, { passive: false });
       
       item.appendChild(deleteBtn);
       
@@ -243,7 +259,12 @@ export const Utils = {
       
       // 点击其他地方关闭删除按钮
       const closeHandler = (e) => {
-        if (!item.contains(e.target) || e.target === item) {
+        // 如果点击的是删除按钮本身，不关闭
+        if (e.target === deleteBtn) return;
+        // 如果点击的是删除按钮的子元素，也不关闭
+        if (deleteBtn.contains(e.target)) return;
+        // 如果点击的不是 item 内的元素，关闭
+        if (!item.contains(e.target)) {
           Utils._hideDeleteButton(item);
           document.removeEventListener('click', closeHandler);
         }
@@ -262,8 +283,12 @@ export const Utils = {
       if (deleteBtn) {
         deleteBtn.style.transform = 'translateX(100%)';
         setTimeout(() => {
-          if (deleteBtn.parentNode) {
-            deleteBtn.remove();
+          try {
+            if (deleteBtn.parentNode) {
+              deleteBtn.remove();
+            }
+          } catch (e) {
+            // 元素可能已经被移除，忽略错误
           }
         }, 300);
       }
@@ -271,6 +296,9 @@ export const Utils = {
       // 恢复内容位置
       item.style.transform = 'translateX(0)';
       item.style.transition = 'transform 0.3s ease-out';
+      
+      // 清理 will-change
+      item.style.willChange = 'auto';
     },
 
     // 执行删除操作
@@ -281,23 +309,43 @@ export const Utils = {
           return false;
         }
 
+        // 获取当前高度
+        const currentHeight = item.offsetHeight;
+        
+        // 设置初始状态
+        item.style.height = currentHeight + 'px';
+        item.style.overflow = 'hidden';
+        
+        // 强制浏览器重绘
+        item.offsetHeight;
+        
         // 添加删除动画
-        item.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out, max-height 0.3s ease-out';
+        item.style.transition = 'height 0.3s ease-out, opacity 0.3s ease-out, transform 0.3s ease-out';
         item.style.transform = 'translateX(-100%)';
         item.style.opacity = '0';
-        item.style.maxHeight = item.offsetHeight + 'px';
-
+        
         // 等待动画完成后执行删除
         setTimeout(() => {
-          item.style.maxHeight = '0';
-          item.style.marginTop = '0';
-          item.style.marginBottom = '0';
+          // 设置高度为 0
+          item.style.height = '0';
           item.style.paddingTop = '0';
           item.style.paddingBottom = '0';
-          item.style.overflow = 'hidden';
+          item.style.marginTop = '0';
+          item.style.marginBottom = '0';
           
           setTimeout(() => {
             try {
+              // 清理事件绑定，防止内存泄漏
+              if (record && typeof record._unbindSwipeDelete === 'function') {
+                record._unbindSwipeDelete(item);
+              }
+              
+              // 移除元素
+              if (item.parentNode) {
+                item.remove();
+              }
+              
+              // 执行删除回调
               deleteCallback();
             } catch (error) {
               console.error('[Utils] 删除回调执行失败:', error);
@@ -439,6 +487,8 @@ export const Utils = {
       this._isHorizontal[key] = false;
       this._hasDirection[key] = false;
       this._isLeftSwipe[key] = false;
+      
+      console.log(`[SwipeDelete] touchstart - key: ${key}, x: ${touch.clientX}, y: ${touch.clientY}`);
     },
 
     handleTouchMove: function(e, idx, prefix) {
@@ -483,13 +533,19 @@ export const Utils = {
       const item = e.currentTarget;
       if (!item) return;
       
+      // 检查是否已有删除按钮，如果有则不再处理滑动
+      const existingBtn = item.querySelector('.swipe-delete-btn');
+      if (existingBtn) return;
+      
       const progress = Math.min(absDeltaX / this._threshold, 1);
       
       this._showDeleteIndicator(item, progress);
       
+      // 使用 GPU 加速的 transform，并限制最大位移
       const translateX = Math.max(deltaX * 0.5, -80);
       item.style.transform = `translateX(${translateX}px)`;
-      item.style.transition = 'transform 0.05s ease-out';
+      // 移除 transition 以提高流畅度
+      item.style.willChange = 'transform';
       
       const indicator = item.querySelector('.swipe-delete-indicator');
       if (indicator && absDeltaX >= this._threshold) {
@@ -505,6 +561,14 @@ export const Utils = {
       // 隐藏删除指示器
       this._hideDeleteIndicator(item);
       
+      // 移除 will-change 提示
+      item.style.willChange = 'auto';
+      
+      const deltaX = this._currentX[key] - this._startX[key];
+      const deltaTime = Date.now() - this._startTime[key];
+      
+      console.log(`[SwipeDelete] touchend - key: ${key}, deltaX: ${deltaX}, deltaTime: ${deltaTime}, isHorizontal: ${this._isHorizontal[key]}, isLeftSwipe: ${this._isLeftSwipe[key]}`);
+      
       if (!this._isHorizontal[key] || 
           !this._isLeftSwipe[key]) {
         // 不是向左滑动，恢复原位
@@ -514,14 +578,14 @@ export const Utils = {
         return;
       }
       
-      const deltaX = this._currentX[key] - this._startX[key];
-      const deltaTime = Date.now() - this._startTime[key];
-      
       const isQuickSwipe = deltaTime < 200 && deltaX < -40;
       const isLongSwipe = deltaX <= -this._threshold;
       
+      console.log(`[SwipeDelete] Swipe detected - isQuickSwipe: ${isQuickSwipe}, isLongSwipe: ${isLongSwipe}`);
+      
       if (isQuickSwipe || isLongSwipe) {
         // ✅ 滑动成功，显示删除按钮而不是直接弹出确认框
+        console.log(`[SwipeDelete] Showing delete button`);
         this._showDeleteButton(item, deleteCallback);
       } else {
         // 滑动不够，恢复原位

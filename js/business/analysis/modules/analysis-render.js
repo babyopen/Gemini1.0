@@ -230,10 +230,40 @@ export const analysisRender = {
    * 虚拟列表组件
    */
   VirtualList: {
-    itemHeight: 72,
-    visibleCount: 20,
+    baseItemHeight: 72,
     buffer: 5,
     maxItemsForSimpleRender: 50,
+    
+    getItemHeight: function() {
+      const width = window.innerWidth;
+      if (width <= 320) return 58;
+      if (width <= 375) return 64;
+      if (width <= 414) return 70;
+      if (width <= 480) return 76;
+      if (width <= 768) return 82;
+      if (width <= 1024) return 88;
+      if (width <= 1200) return 94;
+      return 105;
+    },
+    
+    getVisibleCount: function() {
+      const width = window.innerWidth;
+      const baseOffset = width <= 480 ? 200 : 250;
+      const itemHeight = this.getItemHeight();
+      return Math.max(5, Math.floor((window.innerHeight - baseOffset) / itemHeight));
+    },
+    
+    getBallSize: function() {
+      const width = window.innerWidth;
+      if (width <= 320) return { ball: 24, font: 9, gap: 3 };
+      if (width <= 375) return { ball: 26, font: 10, gap: 3 };
+      if (width <= 414) return { ball: 28, font: 11, gap: 4 };
+      if (width <= 480) return { ball: 30, font: 12, gap: 4 };
+      if (width <= 768) return { ball: 32, font: 13, gap: 5 };
+      if (width <= 1024) return { ball: 34, font: 14, gap: 5 };
+      if (width <= 1200) return { ball: 36, font: 15, gap: 6 };
+      return { ball: 42, font: 17, gap: 8 };
+    },
     
     /**
      * 渲染虚拟列表
@@ -283,10 +313,12 @@ export const analysisRender = {
         return;
       }
       
-      const totalHeight = data.length * analysisRender.VirtualList.itemHeight;
+      const itemHeight = analysisRender.VirtualList.getItemHeight();
+      const visibleCount = analysisRender.VirtualList.getVisibleCount();
+      const totalHeight = data.length * itemHeight;
       
       container.innerHTML = `
-        <div class="virtual-list-container" style="position: relative; overflow-y: auto; height: ${analysisRender.VirtualList.visibleCount * analysisRender.VirtualList.itemHeight}px;">
+        <div class="virtual-list-container" style="position: relative; overflow-y: auto; height: ${visibleCount * itemHeight}px;">
           <div class="virtual-list-placeholder" style="height: ${totalHeight}px; position: relative;"></div>
           <div class="virtual-list-content" style="position: absolute; top: 0; left: 0; right: 0;"></div>
         </div>
@@ -299,7 +331,7 @@ export const analysisRender = {
       
       scrollContainer.addEventListener('scroll', () => {
         const scrollTop = scrollContainer.scrollTop;
-        const startIndex = Math.max(0, Math.floor(scrollTop / analysisRender.VirtualList.itemHeight) - analysisRender.VirtualList.buffer);
+        const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - analysisRender.VirtualList.buffer);
         analysisRender.VirtualList.update(contentContainer, data, startIndex);
       });
     },
@@ -311,14 +343,14 @@ export const analysisRender = {
      * @param {number} startIndex - 起始索引
      */
     update: (container, data, startIndex) => {
-      const endIndex = Math.min(data.length, startIndex + analysisRender.VirtualList.visibleCount + analysisRender.VirtualList.buffer * 2);
+      const itemHeight = analysisRender.VirtualList.getItemHeight();
+      const visibleCount = analysisRender.VirtualList.getVisibleCount();
+      const endIndex = Math.min(data.length, startIndex + visibleCount + analysisRender.VirtualList.buffer * 2);
       const visibleData = data.slice(startIndex, endIndex);
       
-      // 计算偏移量
-      const offsetTop = startIndex * analysisRender.VirtualList.itemHeight;
+      const offsetTop = startIndex * itemHeight;
       container.style.transform = `translateY(${offsetTop}px)`;
       
-      // 使用文档片段渲染可见项目
       const fragment = document.createDocumentFragment();
       
       visibleData.forEach((item, index) => {

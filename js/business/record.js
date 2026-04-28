@@ -2975,6 +2975,21 @@ export const record = {
   },
   
   /**
+   * 绑定滑动删除事件到多个历史记录项（批量优化）
+   * @param {NodeList|Array} items - 历史记录项元素列表
+   * @param {string} type - 类型
+   * @param {Function} deleteCallbackFactory - 删除回调工厂函数，接收 index 和 recordData
+   */
+  _bindSwipeDeleteToItems: (items, type, deleteCallbackFactory) => {
+    if (!items || items.length === 0) return;
+    
+    items.forEach((item, idx) => {
+      const deleteCallback = deleteCallbackFactory ? () => deleteCallbackFactory(idx, item) : null;
+      record._bindSwipeDeleteToItem(item, idx, type, deleteCallback);
+    });
+  },
+  
+  /**
    * 清理滑动删除事件绑定（防止内存泄漏）
    * @param {HTMLElement} item - 要清理的元素
    */

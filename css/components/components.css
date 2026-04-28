@@ -366,6 +366,15 @@
   /* iOS 性能优化 */
   -webkit-tap-highlight-color: transparent;
   will-change: transform, opacity, max-height;
+  /* Going 1.0 风格适配 */
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-item:last-child {
+  border-bottom: none;
 }
 
 /* 历史预测期数分区 */
