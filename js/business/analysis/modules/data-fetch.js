@@ -6,6 +6,7 @@ import { StateManager } from '../../../state-manager.js';
 import { Toast } from '../../../toast.js';
 import { PerformanceMonitor } from '../../../performance-monitor.js';
 import { IssueManager } from '../../issue-manager.js';
+import { Utils } from '../../../utils.js';
 import { analysisRender } from './analysis-render.js';
 import { analysisCalc } from './analysis-calc.js';
 
@@ -46,7 +47,11 @@ export const dataFetch = {
         }
         break;
       case 'warn':
-        console.warn(logMessage);
+        if (error) {
+          console.warn(logMessage, error);
+        } else {
+          console.warn(logMessage);
+        }
         break;
       case 'info':
         console.info(logMessage);
@@ -638,12 +643,12 @@ export const dataFetch = {
       // 获取热号和冷号
       const config = CONFIG?.ANALYSIS || {};
       const topCount = config.TOP_ZODIAC_COUNT || 12;
-      const fullNumZodiacMap = state.analysis?.fullNumZodiacMap || {};
+      const fullNumZodiacMap = Utils.buildNumZodiacMap();
       
       // 获取热门号码
       const hotNumbers = analysisCalc.getHotNumbers(fullData, topCount, fullNumZodiacMap);
       // 获取冷门号码
-      const coldNumbers = analysisCalc.getColdNumbers(fullData, topCount, fullNumZodiacMap);
+      const coldNumbers = analysisCalc.getColdReboundNumbers(fullData, topCount, fullNumZodiacMap);
       
       if (!hotNumbers || hotNumbers.length === 0) {
         dataFetch._log('warn', '无热门号码数据，跳过自动保存精选特码记录');
