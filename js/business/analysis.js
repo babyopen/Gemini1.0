@@ -5,6 +5,7 @@ import { CONFIG } from '../config.js';
 import { StateManager } from '../state-manager.js';
 import { Storage } from '../storage.js';
 import { Toast } from '../toast.js';
+import { IssueManager } from '../issue-manager.js';
 import { dataFetch } from './analysis/modules/data-fetch.js';
 import { analysisCalc } from './analysis/modules/analysis-calc.js';
 import { analysisRender } from './analysis/modules/analysis-render.js';
@@ -174,8 +175,10 @@ export const analysis = {
       // ✅ 自动核对所有未核对的记录
       if (item.expect && s?.zod) {
         setTimeout(() => {
+          const parsed = IssueManager.parseIssueNumber(item.expect);
+          const issue = parsed ? parsed.full : item.expect;
           Storage.autoCheckAllRecords({
-            issue: item.expect,
+            issue: issue,
             zodiac: s.zod
           });
         }, 500); // 延迟500ms，确保数据已保存

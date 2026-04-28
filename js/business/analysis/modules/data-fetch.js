@@ -306,7 +306,8 @@ export const dataFetch = {
       
       import('../../record.js').then(({ record }) => {
         recentItems.forEach(item => {
-          const issue = item.expect;
+          const parsed = IssueManager.parseIssueNumber(item.expect);
+          const issue = parsed ? parsed.full : item.expect;
           const s = analysisCalc.getSpecial(item);
           const resultZodiac = s.zod;
           
@@ -624,6 +625,22 @@ export const dataFetch = {
    */
   _autoSaveSpecialRecords: async () => {
     try {
+      // ✅ 先检查下一期期号
+      const nextIssueObj = IssueManager.getNextIssue();
+      if (!nextIssueObj || !nextIssueObj.full) {
+        dataFetch._log('warn', '未找到下一期期号，跳过自动保存精选特码记录');
+        return;
+      }
+      const issue = nextIssueObj.full;
+
+      // ✅ 查询历史记录中是否已存在该期的精选特码数据
+      const existingRecords = Storage.get(Storage.KEYS.NUMBER_RECORDS, []);
+      const hasExisting = existingRecords.some(r => r.issue === issue);
+      if (hasExisting) {
+        dataFetch._log('info', `第${issue}期已有精选特码记录，跳过自动保存`);
+        return;
+      }
+
       const state = StateManager._state;
       const { historyData } = state.analysis;
       
@@ -640,15 +657,15 @@ export const dataFetch = {
         return;
       }
       
-      // 获取热号和冷号
-      const config = CONFIG?.ANALYSIS || {};
-      const topCount = config.TOP_ZODIAC_COUNT || 12;
+      // 获取热号和冷号（需要生成足够多的号码以支持所有 numCount 选项）
+      const allNumCounts = [5, 10, 15, 20];
+      const maxNumCount = Math.max(...allNumCounts);
       const fullNumZodiacMap = Utils.buildNumZodiacMap();
       
       // 获取热门号码
-      const hotNumbers = analysisCalc.getHotNumbers(fullData, topCount, fullNumZodiacMap);
+      const hotNumbers = analysisCalc.getHotNumbers(fullData, maxNumCount, fullNumZodiacMap);
       // 获取冷门号码
-      const coldNumbers = analysisCalc.getColdReboundNumbers(fullData, topCount, fullNumZodiacMap);
+      const coldNumbers = analysisCalc.getColdReboundNumbers(fullData, maxNumCount, fullNumZodiacMap);
       
       if (!hotNumbers || hotNumbers.length === 0) {
         dataFetch._log('warn', '无热门号码数据，跳过自动保存精选特码记录');
@@ -666,7 +683,7 @@ export const dataFetch = {
       // 调用保存方法（使用 'hot' 模式）
       await analysisRender.autoSaveSpecialRecord(finalNums, hotNumbers, coldNumbers, 'hot');
       
-      dataFetch._log('info', '✅ 后台自动保存精选特码记录成功');
+      dataFetch._log('info', `✅ 第${issue}期精选特码记录自动保存成功`);
     } catch (e) {
       dataFetch._log('warn', '后台自动保存精选特码记录失败:', e);
       // 不显示错误，保持静默
