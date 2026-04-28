@@ -198,11 +198,17 @@ export const Utils = {
 
     // ✅ 显示删除按钮
     _showDeleteButton: (item, deleteCallback) => {
-      if (!item) return;
+      if (!item) {
+        console.warn('[Utils] 显示删除按钮失败：item 为空');
+        return;
+      }
+      
+      console.log('[Utils] 显示删除按钮');
       
       // 移除已存在的删除按钮
       const existingBtn = item.querySelector('.swipe-delete-btn');
       if (existingBtn) {
+        console.log('[Utils] 移除已存在的删除按钮');
         existingBtn.remove();
       }
       
@@ -225,46 +231,79 @@ export const Utils = {
         cursor: pointer;
         transform: translateX(100%);
         transition: transform 0.3s ease-out;
-        z-index: 10;
+        z-index: 100;
         border-radius: 0 8px 8px 0;
         box-shadow: -2px 0 8px rgba(255, 59, 48, 0.3);
         user-select: none;
         -webkit-user-select: none;
         touch-action: manipulation;
+        pointer-events: auto;
       `;
       deleteBtn.innerHTML = '🗑️ 删除';
       
-      // 点击删除按钮 - 使用 addEventListener 以确保正确的事件处理
-      deleteBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        // ✅ 显示自定义确认弹窗
-        Utils._showDeleteConfirmDialog(item, deleteCallback);
-      }, { passive: false });
+      // 标记是否已经处理过点击，防止重复触发
+      let hasHandled = false;
       
-      // 确保触摸事件也能正确处理
+      // 阻止删除按钮上的触摸事件冒泡到父元素
+      deleteBtn.addEventListener('touchstart', (e) => {
+        console.log('[Utils] 删除按钮 touchstart');
+        e.stopPropagation();
+      }, { passive: true });
+      
+      deleteBtn.addEventListener('touchmove', (e) => {
+        console.log('[Utils] 删除按钮 touchmove');
+        e.stopPropagation();
+      }, { passive: true });
+      
       deleteBtn.addEventListener('touchend', (e) => {
+        console.log('[Utils] 删除按钮 touchend');
+        e.stopPropagation();
+      }, { passive: true });
+      
+      // 点击删除按钮 - 使用 addEventListener 以确保正确的事件处理
+      const handleClick = (e) => {
+        if (hasHandled) return;
+        hasHandled = true;
+        
         e.preventDefault();
         e.stopPropagation();
+        console.log('[Utils] 删除按钮被点击');
+        
         // ✅ 显示自定义确认弹窗
         Utils._showDeleteConfirmDialog(item, deleteCallback);
-      }, { passive: false });
+        
+        // 重置标志，允许下次点击
+        setTimeout(() => {
+          hasHandled = false;
+        }, 500);
+      };
+      
+      deleteBtn.addEventListener('click', handleClick, { passive: false });
       
       item.appendChild(deleteBtn);
       
       // 动画显示删除按钮
       requestAnimationFrame(() => {
         deleteBtn.style.transform = 'translateX(0)';
+        console.log('[Utils] 删除按钮已显示');
       });
       
       // 点击其他地方关闭删除按钮
       const closeHandler = (e) => {
+        console.log('[Utils] 检测到页面点击，目标:', e.target);
         // 如果点击的是删除按钮本身，不关闭
-        if (e.target === deleteBtn) return;
+        if (e.target === deleteBtn) {
+          console.log('[Utils] 点击的是删除按钮，不关闭');
+          return;
+        }
         // 如果点击的是删除按钮的子元素，也不关闭
-        if (deleteBtn.contains(e.target)) return;
+        if (deleteBtn.contains(e.target)) {
+          console.log('[Utils] 点击的是删除按钮的子元素，不关闭');
+          return;
+        }
         // 如果点击的不是 item 内的元素，关闭
         if (!item.contains(e.target)) {
+          console.log('[Utils] 点击的是外部元素，关闭删除按钮');
           Utils._hideDeleteButton(item);
           document.removeEventListener('click', closeHandler);
         }
@@ -272,6 +311,7 @@ export const Utils = {
       
       setTimeout(() => {
         document.addEventListener('click', closeHandler);
+        console.log('[Utils] 已添加页面点击监听器');
       }, 100);
     },
 
@@ -362,9 +402,12 @@ export const Utils = {
     
     // ✅ 显示删除确认弹窗
     _showDeleteConfirmDialog: (item, deleteCallback) => {
+      console.log('[Utils] 显示删除确认弹窗');
+      
       // 检查是否已经有弹窗存在，避免重复显示
       const existingOverlay = document.querySelector('.delete-confirm-overlay');
       if (existingOverlay) {
+        console.log('[Utils] 已有弹窗存在，跳过');
         return;
       }
       
@@ -381,9 +424,10 @@ export const Utils = {
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 10000;
+        z-index: 99999;
         opacity: 0;
         transition: opacity 0.2s ease;
+        pointer-events: auto;
       `;
       
       const dialog = document.createElement('div');
@@ -426,7 +470,12 @@ export const Utils = {
       
       // 取消按钮
       const cancelBtn = dialog.querySelector('.cancel-delete-btn');
+      let cancelHandled = false;
       const handleCancel = () => {
+        if (cancelHandled) return;
+        cancelHandled = true;
+        
+        console.log('[Utils] 取消删除');
         Utils._closeDeleteDialog(overlay);
         if (item) {
           Utils._hideDeleteButton(item);
@@ -436,24 +485,21 @@ export const Utils = {
         }
       };
       cancelBtn.addEventListener('click', handleCancel);
-      cancelBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        handleCancel();
-      });
       
       // 确认按钮
       const confirmBtn = dialog.querySelector('.confirm-delete-btn');
+      let confirmHandled = false;
       const handleConfirm = () => {
+        if (confirmHandled) return;
+        confirmHandled = true;
+        
+        console.log('[Utils] 确认删除');
         Utils._closeDeleteDialog(overlay);
         if (item && deleteCallback) {
           Utils._performDelete(item, deleteCallback);
         }
       };
       confirmBtn.addEventListener('click', handleConfirm);
-      confirmBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        handleConfirm();
-      });
       
       // 点击背景关闭
       const handleOverlayClick = (e) => {
