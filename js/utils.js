@@ -57,18 +57,10 @@ export const Utils = {
    * @namespace SwipeDeleteHandler
    */
   SwipeDeleteHandler: {
-    _startX: {},
-    _startY: {},
-    _currentX: {},
-    _currentY: {},
-    _startTime: {},
+    _activeItem: null,
     _threshold: 80,
     _directionThreshold: 15,
     _maxAngle: 40,
-    _isHorizontal: {},
-    _hasDirection: {},
-    _isLeftSwipe: {},
-    _activeItem: null,
 
     // 计算滑动角度
     _getSwipeAngle: (deltaX, deltaY) => {
@@ -108,8 +100,8 @@ export const Utils = {
       }
     },
 
-    // ✅ 显示删除按钮
-    _showDeleteButton: (item, deleteCallback) => {
+    // 显示删除按钮
+    _showDeleteButton: function(item, deleteCallback) {
       if (!item) {
         console.warn('[Utils] 显示删除按钮失败：item 为空');
         return;
@@ -146,10 +138,11 @@ export const Utils = {
       }, { passive: false });
       
       // 点击删除按钮显示确认弹窗
+      const handler = this;
       deleteBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        Utils.SwipeDeleteHandler._showDeleteConfirmDialog(item, deleteCallback);
+        handler._showDeleteConfirmDialog(item, deleteCallback);
       });
       
       item.appendChild(deleteBtn);
@@ -170,9 +163,9 @@ export const Utils = {
         }
         // 如果点击的不是 item 内的元素，关闭
         if (!item.contains(e.target)) {
-          this._hideDeleteButton(item);
+          handler._hideDeleteButton(item);
           document.removeEventListener('click', closeHandler);
-          this._activeItem = null;
+          handler._activeItem = null;
         }
       };
       
@@ -182,8 +175,8 @@ export const Utils = {
       }, 100);
     },
 
-    // ✅ 隐藏删除按钮
-    _hideDeleteButton: (item) => {
+    // 隐藏删除按钮
+    _hideDeleteButton: function(item) {
       if (!item) return;
       
       const deleteBtn = item.querySelector('.swipe-delete-btn');
@@ -385,62 +378,58 @@ export const Utils = {
     handleTouchStart: function(e, idx, prefix) {
       if (!e || !e.touches || e.touches.length === 0) return;
       
-      const key = `${prefix}_${idx}`;
       const touch = e.touches[0];
+      const item = e.currentTarget;
+      if (!item) return;
       
-      this._startX[key] = touch.clientX;
-      this._startY[key] = touch.clientY;
-      this._currentX[key] = touch.clientX;
-      this._currentY[key] = touch.clientY;
-      this._startTime[key] = Date.now();
-      this._isHorizontal[key] = false;
-      this._hasDirection[key] = false;
-      this._isLeftSwipe[key] = false;
+      // 存储触摸数据到元素上
+      item._swipeData = {
+        startX: touch.clientX,
+        startY: touch.clientY,
+        currentX: touch.clientX,
+        currentY: touch.clientY,
+        startTime: Date.now(),
+        isHorizontal: false,
+        hasDirection: false,
+        isLeftSwipe: false
+      };
     },
 
     handleTouchMove: function(e, idx, prefix) {
-      const key = `${prefix}_${idx}`;
-      if (this._startX[key] === undefined) return;
-      
       if (!e || !e.touches || e.touches.length === 0) return;
       
       const touch = e.touches[0];
-      const deltaX = touch.clientX - this._startX[key];
-      const deltaY = touch.clientY - this._startY[key];
+      const item = e.currentTarget;
+      if (!item || !item._swipeData) return;
+      
+      const data = item._swipeData;
+      const deltaX = touch.clientX - data.startX;
+      const deltaY = touch.clientY - data.startY;
       const absDeltaX = Math.abs(deltaX);
       const absDeltaY = Math.abs(deltaY);
       
-      if (!this._hasDirection[key]) {
-        if (absDeltaX > this._directionThreshold || 
-            absDeltaY > this._directionThreshold) {
-          this._hasDirection[key] = true;
+      if (!data.hasDirection) {
+        if (absDeltaX > this._directionThreshold || absDeltaY > this._directionThreshold) {
+          data.hasDirection = true;
           
           const angle = this._getSwipeAngle(deltaX, deltaY);
+          data.isHorizontal = absDeltaX > absDeltaY && angle <= this._maxAngle;
+          data.isLeftSwipe = deltaX < 0;
           
-          const isHorizontal = absDeltaX > absDeltaY && angle <= this._maxAngle;
-          this._isHorizontal[key] = isHorizontal;
-          this._isLeftSwipe[key] = deltaX < 0;
-          
-          if (!isHorizontal || deltaX >= 0) {
+          if (!data.isHorizontal || deltaX >= 0) {
             // 如果不是水平滑动或不是向左滑动，恢复原位
-            const item = e.currentTarget;
-            if (item) {
-              item.style.transform = 'translateX(0)';
-              item.style.transition = 'transform 0.3s ease-out';
-            }
+            item.style.transform = 'translateX(0)';
+            item.style.transition = 'transform 0.3s ease-out';
             return;
           }
         }
       }
       
-      if (!this._isHorizontal[key] || !this._isLeftSwipe[key]) {
+      if (!data.isHorizontal || !data.isLeftSwipe) {
         return;
       }
       
       e.preventDefault();
-      
-      const item = e.currentTarget;
-      if (!item) return;
       
       // 如果已经有删除按钮显示，不允许继续滑动
       const existingBtn = item.querySelector('.swipe-delete-btn');
@@ -463,27 +452,24 @@ export const Utils = {
     },
 
     handleTouchEnd: function(e, idx, prefix, deleteCallback) {
-      const key = `${prefix}_${idx}`;
       const item = e.currentTarget;
+      if (!item || !item._swipeData) return;
+      
+      const data = item._swipeData;
+      const deltaX = data.currentX - data.startX;
+      const deltaTime = Date.now() - data.startTime;
       
       // 隐藏删除指示器
       this._hideDeleteIndicator(item);
       
       // 移除 will-change 提示
-      if (item) {
-        item.style.willChange = 'auto';
-      }
-      
-      const deltaX = this._currentX[key] - this._startX[key];
-      const deltaTime = Date.now() - this._startTime[key];
+      item.style.willChange = 'auto';
       
       // 如果不是向左滑动，恢复原位
-      if (!this._isHorizontal[key] || !this._isLeftSwipe[key]) {
-        if (item) {
-          item.style.transform = 'translateX(0)';
-          item.style.transition = 'transform 0.3s ease-out';
-        }
-        this._cleanup(key);
+      if (!data.isHorizontal || !data.isLeftSwipe) {
+        item.style.transform = 'translateX(0)';
+        item.style.transition = 'transform 0.3s ease-out';
+        delete item._swipeData;
         return;
       }
       
@@ -496,24 +482,11 @@ export const Utils = {
         this._showDeleteButton(item, deleteCallback);
       } else {
         // 滑动距离不够，恢复原位
-        if (item) {
-          item.style.transform = 'translateX(0)';
-          item.style.transition = 'transform 0.3s ease-out';
-        }
+        item.style.transform = 'translateX(0)';
+        item.style.transition = 'transform 0.3s ease-out';
       }
       
-      this._cleanup(key);
-    },
-
-    _cleanup: function(key) {
-      delete this._startX[key];
-      delete this._startY[key];
-      delete this._currentX[key];
-      delete this._currentY[key];
-      delete this._startTime[key];
-      delete this._isHorizontal[key];
-      delete this._hasDirection[key];
-      delete this._isLeftSwipe[key];
+      delete item._swipeData;
     }
   },
 

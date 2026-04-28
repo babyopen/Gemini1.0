@@ -1577,6 +1577,17 @@
   padding: 16px;
 }
 
+/* 通用历史记录项样式 - 支持滑动删除 */
+.history-item {
+  position: relative;
+  overflow: visible;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+}
+
 .detail-page-content .history-item {
   background: var(--card);
   border: 1px solid var(--border);

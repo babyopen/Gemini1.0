@@ -787,14 +787,61 @@
 .virtual-list-container {
   border-radius: var(--radius);
   background: var(--card);
+  will-change: scroll-position;
+  contain: strict layout size;
+  -webkit-overflow-scrolling: touch;
 }
 
 .virtual-list-placeholder {
   background: var(--bg-secondary);
+  contain: strict;
 }
 
 .virtual-list-content {
   background: var(--card);
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: layout style;
+}
+
+.history-item {
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 80px;
+  transform: translateZ(0);
+}
+
+.history-expect {
+  will-change: auto;
+  contain: style;
+}
+
+.ball-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  contain: layout style;
+}
+
+.ball-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateZ(0);
+  will-change: auto;
+}
+
+.ball {
+  contain: style;
+  transform: translateZ(0);
+}
+
+.ball-zodiac {
+  font-size: 10px;
+  color: var(--sub-text);
+  will-change: auto;
+  contain: style;
 }
 
 /* 生肖关联专用样式 */

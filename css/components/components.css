@@ -3309,6 +3309,33 @@ textarea:focus-visible {
   transition: transform 0.2s ease;
 }
 
+/* 弹窗按钮基础样式 */
+.delete-confirm-overlay .cancel-delete-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-confirm-overlay .confirm-delete-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: #ff3b30;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
 /* 弹窗按钮悬停效果 */
 .delete-confirm-overlay .cancel-delete-btn:hover {
   background: var(--border);
