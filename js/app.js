@@ -24,11 +24,14 @@ async function initApp() {
   PerformanceMonitor.init();
   DOM.init();
   
-  Render.buildZodiacCycle();
-  Render.buildNumList();
-  DataQuery.init();
-  Render.renderZodiacTags();
-  Render.renderExcludeGrid();
+  // 并行初始化不需要依赖的模块
+  Promise.all([
+    Render.buildZodiacCycle(),
+    Render.buildNumList(),
+    DataQuery.init(),
+    Render.renderZodiacTags(),
+    Render.renderExcludeGrid()
+  ]).catch(e => console.warn('并行初始化失败:', e));
   
   try {
     Storage.loadSavedFilters();
@@ -43,30 +46,33 @@ async function initApp() {
   
   const cache = Storage.loadHistoryCache();
   
-  setTimeout(() => {
-    if(cache.data && cache.data.length > 0) {
-      StateManager.setState({ analysis: { ...StateManager._state.analysis, historyData: cache.data } }, false);
-      try { Business.renderLatest(cache.data[0]); } catch(e) {}
-      try { Business.renderHistory(); } catch(e) {}
-      try { Business.renderFullAnalysis(); } catch(e) {}
-      try { Business.renderZodiacAnalysis(); } catch(e) {}
-      try { Business.updateHotColdStatus(); } catch(e) {}
-      Business.silentRefreshHistory();
-    } else {
-      Business.refreshHistory(true);
-    }
-  }, 100);
+  // 立即渲染缓存数据，提高首屏加载速度
+  if(cache.data && cache.data.length > 0) {
+    StateManager.setState({ analysis: { ...StateManager._state.analysis, historyData: cache.data } }, false);
+    // 并行渲染多个组件
+    Promise.allSettled([
+      Business.renderLatest(cache.data[0]),
+      Business.renderHistory(),
+      Business.renderFullAnalysis(),
+      Business.renderZodiacAnalysis(),
+      Business.updateHotColdStatus()
+    ]);
+    // 后台静默刷新数据
+    setTimeout(() => Business.silentRefreshHistory(), 100);
+  } else {
+    setTimeout(() => Business.refreshHistory(true), 100);
+  }
   
+  // 减少延时时间并合并定时任务
   setTimeout(() => {
-    try { Business.startCountdown(); } catch(e) {}
-    try { Business.checkDrawTimeLoop(); } catch(e) {}
-  }, 300);
-  
-  setTimeout(() => {
-    try { Business.startScheduledDataFetch(); } catch(e) {}
-    try { Business.initAnalysisPage(); } catch(e) {}
-    try { Business.record.init(); } catch(e) {}
-  }, 600);
+    Promise.allSettled([
+      Business.startCountdown(),
+      Business.checkDrawTimeLoop(),
+      Business.startScheduledDataFetch(),
+      Business.initAnalysisPage(),
+      Business.record.init()
+    ]);
+  }, 200); // 从300ms和600ms减少到200ms
   
   const bottomNav = document.querySelector('.bottom-nav');
   if(bottomNav) bottomNav.classList.add('needs-space');

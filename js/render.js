@@ -15,7 +15,7 @@ import { Toast } from './toast.js';
 
 const _lastRenderedList = [];
 const _cachedFragments = new Map();
-const _renderThrottleTimer = null;
+let _renderThrottleTimer = null;
 
 export const Render = {
   /**

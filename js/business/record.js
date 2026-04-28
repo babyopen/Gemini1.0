@@ -84,10 +84,13 @@ export const record = {
         record.bindEvents();
       });
     } else {
-      record._initFilterButtons();
-      record.initPullRefresh();
-      record.initAndRefresh();
-      record.bindEvents();
+      // 优化：并行执行初始化任务
+      Promise.allSettled([
+        record._initFilterButtons(),
+        record.initPullRefresh(),
+        record.initAndRefresh(),
+        record.bindEvents()
+      ]);
     }
   },
   
