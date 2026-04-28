@@ -27,12 +27,48 @@ export const EventBinder = {
   _minSwipeDistance: 50,
   _edgeSwipeWidth: 30,
   
-  // 下拉刷新相关状态
-  _pullStartY: 0,
-  _pullCurrentY: 0,
+  // 下拉刷新相关状态（通用）
+  _pullStartY: {},
+  _pullCurrentY: {},
   _isPulling: false,
   _pullThreshold: 80,
   _maxPullDistance: 150,
+  
+  // 通用下拉刷新处理函数
+  _handlePullMove: function(e, containerId, indicatorId, textId) {
+    if(!EventBinder._isPulling) return;
+    
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - EventBinder._pullStartY[containerId];
+    
+    if(deltaY <= 0) return;
+    
+    e.preventDefault();
+    
+    EventBinder._pullCurrentY[containerId] = deltaY;
+    
+    const pullDistance = Math.min(deltaY * 0.5, EventBinder._maxPullDistance);
+    
+    const indicator = document.getElementById(indicatorId);
+    const container = document.getElementById(containerId);
+    const text = document.getElementById(textId);
+    
+    if(indicator && container && text) {
+      indicator.classList.add('visible');
+      indicator.style.top = `${-50 + pullDistance}px`;
+      
+      if(pullDistance >= EventBinder._pullThreshold) {
+        text.textContent = '释放刷新';
+        indicator.classList.add('refreshing');
+      } else {
+        text.textContent = '下拉刷新';
+        indicator.classList.remove('refreshing');
+      }
+      
+      container.classList.add('pulling');
+      container.style.transform = `translateY(${pullDistance * 0.3}px)`;
+    }
+  },
 
   init: () => {
     document.addEventListener('click', EventBinder.handleGlobalClick);
@@ -541,11 +577,10 @@ export const EventBinder = {
    * 下拉刷新开始
    * @param {TouchEvent} e - 触摸事件
    */
-  handlePullStart: (e) => {
-    // 只有在页面顶部时才启用下拉刷新
+  handlePullStart: function(e) {
     if(window.scrollY > 0) return;
     
-    EventBinder._pullStartY = e.touches[0].clientY;
+    EventBinder._pullStartY['analysisPullContainer'] = e.touches[0].clientY;
     EventBinder._isPulling = true;
   },
   
@@ -553,55 +588,15 @@ export const EventBinder = {
    * 下拉刷新移动
    * @param {TouchEvent} e - 触摸事件
    */
-  handlePullMove: (e) => {
-    if(!EventBinder._isPulling) return;
-    
-    const currentY = e.touches[0].clientY;
-    const deltaY = currentY - EventBinder._pullStartY;
-    
-    // 只处理向下拉动的情况
-    if(deltaY <= 0) return;
-    
-    // 阻止默认滚动行为
-    e.preventDefault();
-    
-    EventBinder._pullCurrentY = deltaY;
-    
-    // 计算下拉距离（带阻力效果）
-    const pullDistance = Math.min(deltaY * 0.5, EventBinder._maxPullDistance);
-    
-    // 更新指示器位置和状态
-    const indicator = document.getElementById('pullRefreshIndicator');
-    const container = document.getElementById('analysisPullContainer');
-    const text = document.getElementById('pullRefreshText');
-    
-    if(indicator && container && text) {
-      // 显示指示器
-      indicator.classList.add('visible');
-      
-      // 设置指示器位置
-      indicator.style.top = `${-50 + pullDistance}px`;
-      
-      // 根据拉动距离更新文本
-      if(pullDistance >= EventBinder._pullThreshold) {
-        text.textContent = '释放刷新';
-        indicator.classList.add('refreshing');
-      } else {
-        text.textContent = '下拉刷新';
-        indicator.classList.remove('refreshing');
-      }
-      
-      // 给容器添加拉动效果
-      container.classList.add('pulling');
-      container.style.transform = `translateY(${pullDistance * 0.3}px)`;
-    }
+  handlePullMove: function(e) {
+    EventBinder._handlePullMove(e, 'analysisPullContainer', 'pullRefreshIndicator', 'pullRefreshText');
   },
   
   /**
    * 下拉刷新结束
    * @param {TouchEvent} e - 触摸事件
    */
-  handlePullEnd: (e) => {
+  handlePullEnd: function(e) {
     if(!EventBinder._isPulling) return;
     
     EventBinder._isPulling = false;
@@ -611,21 +606,16 @@ export const EventBinder = {
     const text = document.getElementById('pullRefreshText');
     
     if(indicator && container && text) {
-      // 移除拉动效果
       container.classList.remove('pulling');
       container.style.transform = '';
       
-      // 检查是否达到刷新阈值
-      if(EventBinder._pullCurrentY >= EventBinder._pullThreshold) {
-        // 执行刷新
+      if(EventBinder._pullCurrentY['analysisPullContainer'] >= EventBinder._pullThreshold) {
         text.textContent = '刷新中...';
         indicator.style.top = '-20px';
         
-        // 调用刷新函数
         setTimeout(() => {
-          Business.refreshHistory(true); // 静默模式
+          Business.refreshHistory(true);
           
-          // 刷新完成后隐藏指示器
           setTimeout(() => {
             indicator.classList.remove('visible', 'refreshing');
             indicator.style.top = '-50px';
@@ -633,26 +623,23 @@ export const EventBinder = {
           }, 500);
         }, 300);
       } else {
-        // 未达到阈值，隐藏指示器
         indicator.classList.remove('visible', 'refreshing');
         indicator.style.top = '-50px';
         text.textContent = '下拉刷新';
       }
     }
     
-    // 重置状态
-    EventBinder._pullCurrentY = 0;
+    EventBinder._pullCurrentY['analysisPullContainer'] = 0;
   },
   
   /**
    * 记录页面下拉刷新开始
    * @param {TouchEvent} e - 触摸事件
    */
-  handleRecordPullStart: (e) => {
-    // 只有在页面顶部时才启用下拉刷新
+  handleRecordPullStart: function(e) {
     if(window.scrollY > 0) return;
     
-    EventBinder._pullStartY = e.touches[0].clientY;
+    EventBinder._pullStartY['recordPullContainer'] = e.touches[0].clientY;
     EventBinder._isPulling = true;
   },
   
@@ -660,48 +647,8 @@ export const EventBinder = {
    * 记录页面下拉刷新移动
    * @param {TouchEvent} e - 触摸事件
    */
-  handleRecordPullMove: (e) => {
-    if(!EventBinder._isPulling) return;
-    
-    const currentY = e.touches[0].clientY;
-    const deltaY = currentY - EventBinder._pullStartY;
-    
-    // 只处理向下拉动的情况
-    if(deltaY <= 0) return;
-    
-    // 阻止默认滚动行为
-    e.preventDefault();
-    
-    EventBinder._pullCurrentY = deltaY;
-    
-    // 计算下拉距离（带阻力效果）
-    const pullDistance = Math.min(deltaY * 0.5, EventBinder._maxPullDistance);
-    
-    // 更新指示器位置和状态
-    const indicator = document.getElementById('recordPullRefreshIndicator');
-    const container = document.getElementById('recordPullContainer');
-    const text = document.getElementById('recordPullRefreshText');
-    
-    if(indicator && container && text) {
-      // 显示指示器
-      indicator.classList.add('visible');
-      
-      // 设置指示器位置
-      indicator.style.top = `${-50 + pullDistance}px`;
-      
-      // 根据拉动距离更新文本
-      if(pullDistance >= EventBinder._pullThreshold) {
-        text.textContent = '释放刷新';
-        indicator.classList.add('refreshing');
-      } else {
-        text.textContent = '下拉刷新';
-        indicator.classList.remove('refreshing');
-      }
-      
-      // 给容器添加拉动效果
-      container.classList.add('pulling');
-      container.style.transform = `translateY(${pullDistance * 0.3}px)`;
-    }
+  handleRecordPullMove: function(e) {
+    EventBinder._handlePullMove(e, 'recordPullContainer', 'recordPullRefreshIndicator', 'recordPullRefreshText');
   },
   
   /**

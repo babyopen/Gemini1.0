@@ -19,6 +19,7 @@
   /* 中性色 */
   --text:#000000;              /* 主文字 */
   --text-secondary:#3C3C43;    /* 次要文字 */
+  --sub-text:#8E8E93;          /* 辅助文字（次要文字别名） */
   --text-tertiary:#8E8E93;     /* 辅助文字 */
   --text-disabled:#C7C7CC;     /* 禁用文字 */
   
@@ -146,6 +147,7 @@
     /* 中性色 */
     --text:#FFFFFF;              /* 主文字 */
     --text-secondary:#D1D1D6;    /* 次要文字 */
+    --sub-text:#98989F;         /* 辅助文字（次要文字别名） */
     --text-tertiary:#98989F;     /* 辅助文字 */
     --text-disabled:#636366;     /* 禁用文字 */
     

@@ -14,19 +14,28 @@ export const Utils = {
    * @returns {Function} 节流后的函数
    */
   throttle: (fn, delay) => {
+    let lastTime = 0;
     let timer = null;
     return function(...args) {
-      if(!timer){
-        timer = setTimeout(() => {
-          fn.apply(this, args);
+      const now = Date.now();
+      const remaining = delay - (now - lastTime);
+      
+      if (remaining <= 0) {
+        if (timer) {
+          clearTimeout(timer);
           timer = null;
-        }, delay);
+        }
+        lastTime = now;
+        fn.apply(this, args);
+      } else if (!timer) {
+        timer = setTimeout(() => {
+          lastTime = Date.now();
+          timer = null;
+          fn.apply(this, args);
+        }, remaining);
       }
     }
   },
-
-
-
 
   /**
    * 防抖函数（优化高频点击）
@@ -42,90 +51,6 @@ export const Utils = {
     }
   },
 
-
-
-
-  /**
-   * 深拷贝对象
-   * @param {any} obj - 要拷贝的对象
-   * @returns {any} 拷贝后的对象
-   */
-  deepClone: (obj) => {
-    try {
-      if(typeof obj !== 'object' || obj === null) {
-        return obj;
-      }
-      if(typeof structuredClone === 'function') {
-        return structuredClone(obj);
-      }
-      return JSON.parse(JSON.stringify(obj));
-    } catch(e) {
-      console.error('深拷贝失败', e);
-      return obj;
-    }
-  },
-
-  /**
-   * 标签值类型转换（解决数字/字符串匹配问题）
-   * @param {string|number} value - 标签值
-   * @param {string} group - 分组名
-   * @returns {string|number} 转换后的值
-   */
-  formatTagValue: (value, group) => {
-    return CONFIG.NUMBER_GROUPS.includes(group) ? Number(value) : value;
-  },
-
-  /**
-   * 获取安全区顶部高度
-   * @returns {number} 安全区高度(px)
-   */
-  getSafeTop: () => {
-    return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-top')) || 0;
-  },
-
-  /**
-   * 校验筛选方案格式
-   * @param {any} item - 要校验的方案对象
-   * @returns {boolean} 是否合法
-   */
-  validateFilterItem: (item) => {
-    return item && 
-      typeof item === 'object' && 
-      typeof item.name === 'string' && 
-      item.selected && typeof item.selected === 'object' &&
-      Array.isArray(item.excluded);
-  },
-
-  /**
-   * 生成DocumentFragment优化DOM渲染
-   * @param {Array} list - 要渲染的列表
-   * @param {Function} renderItem - 单个元素渲染函数
-   * @returns {DocumentFragment} 生成的文档片段
-   */
-  createFragment: (list, renderItem) => {
-    const fragment = document.createDocumentFragment();
-    list.forEach((item, index) => {
-      const el = renderItem(item, index);
-      if(el) fragment.appendChild(el);
-    });
-    return fragment;
-  },
-
-  /**
-   * HTML转义函数，防止XSS攻击
-   * @param {string} text - 要转义的文本
-   * @returns {string} 转义后的文本
-   */
-  escapeHtml: (text) => {
-    if (typeof text !== 'string') return text;
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  },
-
-  /**
-   * 通用触摸滑动删除处理器
-   */
   /**
    * 左滑删除处理器（通用版）
    * 支持所有历史记录容器的左滑删除功能
@@ -137,12 +62,13 @@ export const Utils = {
     _currentX: {},
     _currentY: {},
     _startTime: {},
-    _threshold: 80, // 降低触发删除的滑动距离阈值（从100px降到80px）
-    _directionThreshold: 15, // 降低方向判断阈值（从20px降到15px）
-    _maxAngle: 40, // 增大最大允许角度（从35度增加到40度）
+    _threshold: 80,
+    _directionThreshold: 15,
+    _maxAngle: 40,
     _isHorizontal: {},
     _hasDirection: {},
-    _isLeftSwipe: {}, // 是否为向左滑动
+    _isLeftSwipe: {},
+    _activeItem: null,
 
     // 计算滑动角度
     _getSwipeAngle: (deltaX, deltaY) => {
@@ -158,20 +84,6 @@ export const Utils = {
       if (!indicator) {
         indicator = document.createElement('div');
         indicator.className = 'swipe-delete-indicator';
-        indicator.style.cssText = `
-          position: absolute;
-          right: 0;
-          top: 0;
-          bottom: 0;
-          width: 4px;
-          background: linear-gradient(to bottom, #ff3b30, #ff453a);
-          transform: scaleY(0);
-          transform-origin: top;
-          transition: transform 0.1s ease-out;
-          z-index: 10;
-          border-radius: 2px;
-          pointer-events: none;
-        `;
         item.appendChild(indicator);
       }
       indicator.style.transform = `scaleY(${Math.min(progress, 1)})`;
@@ -186,11 +98,11 @@ export const Utils = {
         indicator.style.transform = 'scaleY(0)';
         setTimeout(() => {
           try {
-            if (indicator.parentNode) {
+            if (indicator && indicator.parentNode) {
               indicator.remove();
             }
           } catch (e) {
-            // 元素可能已经被移除，忽略错误
+            // 忽略错误
           }
         }, 200);
       }
@@ -203,115 +115,70 @@ export const Utils = {
         return;
       }
       
-      console.log('[Utils] 显示删除按钮');
+      // 如果已经有删除按钮显示在其他item上，先隐藏它
+      if (this._activeItem && this._activeItem !== item) {
+        this._hideDeleteButton(this._activeItem);
+      }
       
       // 移除已存在的删除按钮
       const existingBtn = item.querySelector('.swipe-delete-btn');
       if (existingBtn) {
-        console.log('[Utils] 移除已存在的删除按钮');
         existingBtn.remove();
       }
       
       // 创建删除按钮
       const deleteBtn = document.createElement('div');
       deleteBtn.className = 'swipe-delete-btn';
-      deleteBtn.style.cssText = `
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        width: 80px;
-        background: linear-gradient(to left, #ff3b30, #ff453a);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transform: translateX(100%);
-        transition: transform 0.3s ease-out;
-        z-index: 100;
-        border-radius: 0 8px 8px 0;
-        box-shadow: -2px 0 8px rgba(255, 59, 48, 0.3);
-        user-select: none;
-        -webkit-user-select: none;
-        touch-action: manipulation;
-        pointer-events: auto;
-      `;
-      deleteBtn.innerHTML = '🗑️ 删除';
+      deleteBtn.textContent = '🗑️ 删除';
       
-      // 标记是否已经处理过点击，防止重复触发
-      let hasHandled = false;
-      
-      // 阻止删除按钮上的触摸事件冒泡到父元素
+      // 阻止删除按钮上的触摸事件冒泡
       deleteBtn.addEventListener('touchstart', (e) => {
-        console.log('[Utils] 删除按钮 touchstart');
         e.stopPropagation();
       }, { passive: true });
       
       deleteBtn.addEventListener('touchmove', (e) => {
-        console.log('[Utils] 删除按钮 touchmove');
         e.stopPropagation();
       }, { passive: true });
       
       deleteBtn.addEventListener('touchend', (e) => {
-        console.log('[Utils] 删除按钮 touchend');
         e.stopPropagation();
-      }, { passive: true });
+        e.preventDefault();
+      }, { passive: false });
       
-      // 点击删除按钮 - 使用 addEventListener 以确保正确的事件处理
-      const handleClick = (e) => {
-        if (hasHandled) return;
-        hasHandled = true;
-        
+      // 点击删除按钮显示确认弹窗
+      deleteBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('[Utils] 删除按钮被点击');
-        
-        // ✅ 显示自定义确认弹窗
-        Utils._showDeleteConfirmDialog(item, deleteCallback);
-        
-        // 重置标志，允许下次点击
-        setTimeout(() => {
-          hasHandled = false;
-        }, 500);
-      };
-      
-      deleteBtn.addEventListener('click', handleClick, { passive: false });
+        Utils.SwipeDeleteHandler._showDeleteConfirmDialog(item, deleteCallback);
+      });
       
       item.appendChild(deleteBtn);
       
       // 动画显示删除按钮
       requestAnimationFrame(() => {
         deleteBtn.style.transform = 'translateX(0)';
-        console.log('[Utils] 删除按钮已显示');
       });
+      
+      // 设置当前激活的item
+      this._activeItem = item;
       
       // 点击其他地方关闭删除按钮
       const closeHandler = (e) => {
-        console.log('[Utils] 检测到页面点击，目标:', e.target);
-        // 如果点击的是删除按钮本身，不关闭
-        if (e.target === deleteBtn) {
-          console.log('[Utils] 点击的是删除按钮，不关闭');
-          return;
-        }
-        // 如果点击的是删除按钮的子元素，也不关闭
+        // 如果点击的是删除按钮本身或其子元素，不关闭
         if (deleteBtn.contains(e.target)) {
-          console.log('[Utils] 点击的是删除按钮的子元素，不关闭');
           return;
         }
         // 如果点击的不是 item 内的元素，关闭
         if (!item.contains(e.target)) {
-          console.log('[Utils] 点击的是外部元素，关闭删除按钮');
-          Utils._hideDeleteButton(item);
+          this._hideDeleteButton(item);
           document.removeEventListener('click', closeHandler);
+          this._activeItem = null;
         }
       };
       
+      // 延迟添加点击监听，避免立即触发
       setTimeout(() => {
         document.addEventListener('click', closeHandler);
-        console.log('[Utils] 已添加页面点击监听器');
       }, 100);
     },
 
@@ -324,11 +191,11 @@ export const Utils = {
         deleteBtn.style.transform = 'translateX(100%)';
         setTimeout(() => {
           try {
-            if (deleteBtn.parentNode) {
+            if (deleteBtn && deleteBtn.parentNode) {
               deleteBtn.remove();
             }
           } catch (e) {
-            // 元素可能已经被移除，忽略错误
+            // 忽略错误
           }
         }, 300);
       }
@@ -336,9 +203,12 @@ export const Utils = {
       // 恢复内容位置
       item.style.transform = 'translateX(0)';
       item.style.transition = 'transform 0.3s ease-out';
-      
-      // 清理 will-change
       item.style.willChange = 'auto';
+      
+      // 清除激活状态
+      if (this._activeItem === item) {
+        this._activeItem = null;
+      }
     },
 
     // 执行删除操作
@@ -376,7 +246,7 @@ export const Utils = {
           setTimeout(() => {
             try {
               // 清理事件绑定，防止内存泄漏
-              if (record && typeof record._unbindSwipeDelete === 'function') {
+              if (typeof record !== 'undefined' && record && typeof record._unbindSwipeDelete === 'function') {
                 record._unbindSwipeDelete(item);
               }
               
@@ -402,60 +272,27 @@ export const Utils = {
     
     // ✅ 显示删除确认弹窗
     _showDeleteConfirmDialog: (item, deleteCallback) => {
-      console.log('[Utils] 显示删除确认弹窗');
-      
       // 检查是否已经有弹窗存在，避免重复显示
       const existingOverlay = document.querySelector('.delete-confirm-overlay');
       if (existingOverlay) {
-        console.log('[Utils] 已有弹窗存在，跳过');
         return;
       }
       
-      // 创建弹窗
+      // 创建弹窗遮罩层
       const overlay = document.createElement('div');
       overlay.className = 'delete-confirm-overlay';
-      overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 99999;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-        pointer-events: auto;
-      `;
       
+      // 创建弹窗内容
       const dialog = document.createElement('div');
       dialog.className = 'dialog-content';
-      dialog.style.cssText = `
-        background: var(--card);
-        border-radius: 16px;
-        padding: 24px;
-        max-width: 90%;
-        width: 320px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        transform: scale(0.9);
-        transition: transform 0.2s ease;
-      `;
       
       dialog.innerHTML = `
-        <div style="text-align: center; margin-bottom: 20px;">
-          <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
-          <div style="font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 8px;">确认删除</div>
-          <div style="font-size: 14px; color: var(--sub-text);">删除后将无法恢复，确定要删除吗？</div>
-        </div>
-        <div style="display: flex; gap: 12px;">
-          <button class="cancel-delete-btn" style="flex: 1; padding: 12px; border: none; border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; cursor: pointer; transition: all 0.2s;">
-            取消
-          </button>
-          <button class="confirm-delete-btn" style="flex: 1; padding: 12px; border: none; border-radius: 8px; background: #ff3b30; color: white; font-size: 14px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
-            确定删除
-          </button>
+        <div class="delete-confirm-icon">⚠️</div>
+        <div class="delete-confirm-title">确认删除</div>
+        <div class="delete-confirm-message">删除后将无法恢复，确定要删除吗？</div>
+        <div class="delete-confirm-buttons">
+          <button class="cancel-delete-btn">取消</button>
+          <button class="confirm-delete-btn">确定删除</button>
         </div>
       `;
       
@@ -468,17 +305,16 @@ export const Utils = {
         dialog.style.transform = 'scale(1)';
       });
       
-      // 取消按钮
+      // 取消按钮处理
       const cancelBtn = dialog.querySelector('.cancel-delete-btn');
       let cancelHandled = false;
       const handleCancel = () => {
         if (cancelHandled) return;
         cancelHandled = true;
         
-        console.log('[Utils] 取消删除');
-        Utils._closeDeleteDialog(overlay);
+        Utils.SwipeDeleteHandler._closeDeleteDialog(overlay);
         if (item) {
-          Utils._hideDeleteButton(item);
+          Utils.SwipeDeleteHandler._hideDeleteButton(item);
         }
         if (typeof Toast !== 'undefined') {
           Toast.show('已取消删除');
@@ -486,34 +322,32 @@ export const Utils = {
       };
       cancelBtn.addEventListener('click', handleCancel);
       
-      // 确认按钮
+      // 确认按钮处理
       const confirmBtn = dialog.querySelector('.confirm-delete-btn');
       let confirmHandled = false;
       const handleConfirm = () => {
         if (confirmHandled) return;
         confirmHandled = true;
         
-        console.log('[Utils] 确认删除');
-        Utils._closeDeleteDialog(overlay);
+        Utils.SwipeDeleteHandler._closeDeleteDialog(overlay);
         if (item && deleteCallback) {
-          Utils._performDelete(item, deleteCallback);
+          Utils.SwipeDeleteHandler._performDelete(item, deleteCallback);
         }
       };
       confirmBtn.addEventListener('click', handleConfirm);
       
       // 点击背景关闭
-      const handleOverlayClick = (e) => {
+      overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
-          Utils._closeDeleteDialog(overlay);
+          Utils.SwipeDeleteHandler._closeDeleteDialog(overlay);
           if (item) {
-            Utils._hideDeleteButton(item);
+            Utils.SwipeDeleteHandler._hideDeleteButton(item);
           }
           if (typeof Toast !== 'undefined') {
             Toast.show('已取消删除');
           }
         }
-      };
-      overlay.addEventListener('click', handleOverlayClick);
+      });
     },
     
     // ✅ 关闭删除弹窗
@@ -599,8 +433,7 @@ export const Utils = {
         }
       }
       
-      if (!this._isHorizontal[key] || 
-          !this._isLeftSwipe[key]) {
+      if (!this._isHorizontal[key] || !this._isLeftSwipe[key]) {
         return;
       }
       
@@ -609,20 +442,20 @@ export const Utils = {
       const item = e.currentTarget;
       if (!item) return;
       
+      // 如果已经有删除按钮显示，不允许继续滑动
       const existingBtn = item.querySelector('.swipe-delete-btn');
       if (existingBtn) return;
       
       const progress = Math.min(absDeltaX / this._threshold, 1);
       const translateX = Math.max(deltaX * 0.5, -80);
       
-      const self = this;
       requestAnimationFrame(() => {
-        self._showDeleteIndicator(item, progress);
+        this._showDeleteIndicator(item, progress);
         item.style.willChange = 'transform';
         item.style.transform = `translateX(${translateX}px)`;
         
         const indicator = item.querySelector('.swipe-delete-indicator');
-        if (indicator && absDeltaX >= self._threshold) {
+        if (indicator && absDeltaX >= this._threshold) {
           indicator.style.background = 'linear-gradient(to bottom, #ff453a, #ff3b30)';
           indicator.style.boxShadow = '0 0 8px rgba(255, 59, 48, 0.6)';
         }
@@ -644,11 +477,8 @@ export const Utils = {
       const deltaX = this._currentX[key] - this._startX[key];
       const deltaTime = Date.now() - this._startTime[key];
       
-      console.log(`[SwipeDelete] touchend - key: ${key}, deltaX: ${deltaX}, deltaTime: ${deltaTime}, isHorizontal: ${this._isHorizontal[key]}, isLeftSwipe: ${this._isLeftSwipe[key]}`);
-      
-      if (!this._isHorizontal[key] || 
-          !this._isLeftSwipe[key]) {
-        // 不是向左滑动，恢复原位
+      // 如果不是向左滑动，恢复原位
+      if (!this._isHorizontal[key] || !this._isLeftSwipe[key]) {
         if (item) {
           item.style.transform = 'translateX(0)';
           item.style.transition = 'transform 0.3s ease-out';
@@ -657,17 +487,15 @@ export const Utils = {
         return;
       }
       
+      // 判断是否达到触发条件
       const isQuickSwipe = deltaTime < 200 && deltaX < -40;
       const isLongSwipe = Math.abs(deltaX) >= this._threshold;
       
-      console.log(`[SwipeDelete] Swipe detected - isQuickSwipe: ${isQuickSwipe}, isLongSwipe: ${isLongSwipe}`);
-      
       if (isQuickSwipe || isLongSwipe) {
-        // ✅ 滑动成功，显示删除按钮而不是直接弹出确认框
-        console.log(`[SwipeDelete] Showing delete button`);
+        // 滑动成功，显示删除按钮
         this._showDeleteButton(item, deleteCallback);
       } else {
-        // 滑动不够，恢复原位
+        // 滑动距离不够，恢复原位
         if (item) {
           item.style.transform = 'translateX(0)';
           item.style.transition = 'transform 0.3s ease-out';
@@ -700,16 +528,15 @@ export const Utils = {
     _currentX: {},
     _currentY: {},
     _startTime: {},
-    _threshold: 80, // 触发复制的滑动距离阈值（80px）
-    _directionThreshold: 15, // 方向判断阈值（15px）
-    _maxAngle: 30, // 最大允许角度（30度）
+    _threshold: 80,
+    _directionThreshold: 15,
+    _maxAngle: 30,
     _isHorizontal: {},
     _hasDirection: {},
-    _isRightSwipe: {}, // 是否为向右滑动
+    _isRightSwipe: {},
 
     // 获取元素文本内容
     _getElementText: (element) => {
-      // 提取所有文本，包括嵌套元素
       const text = element.innerText || element.textContent || '';
       return text.trim().replace(/\s+/g, ' ');
     },
@@ -726,19 +553,6 @@ export const Utils = {
       if (!indicator) {
         indicator = document.createElement('div');
         indicator.className = 'swipe-indicator';
-        indicator.style.cssText = `
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 4px;
-          background: linear-gradient(to bottom, var(--success), #34C759);
-          transform: scaleY(0);
-          transform-origin: top;
-          transition: transform 0.1s ease-out;
-          z-index: 10;
-          border-radius: 2px;
-        `;
         item.appendChild(indicator);
       }
       indicator.style.transform = `scaleY(${Math.min(progress, 1)})`;
@@ -755,44 +569,22 @@ export const Utils = {
 
     // 显示复制成功反馈
     _showCopyFeedback: (item, text) => {
-      // 创建成功提示
       const feedback = document.createElement('div');
       feedback.className = 'copy-feedback';
-      feedback.style.cssText = `
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%) scale(0);
-        background: var(--success);
-        color: #fff;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4);
-        z-index: 100;
-        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        pointer-events: none;
-      `;
       feedback.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
-        已复制
+        <span>已复制</span>
       `;
       item.appendChild(feedback);
 
-      // 动画显示
       requestAnimationFrame(() => {
-        feedback.style.transform = 'translate(-50%, -50%) scale(1)';
+        feedback.classList.add('show');
       });
 
-      // 2秒后移除
       setTimeout(() => {
-        feedback.style.transform = 'translate(-50%, -50%) scale(0)';
+        feedback.classList.remove('show');
         setTimeout(() => feedback.remove(), 300);
       }, 2000);
     },
@@ -801,16 +593,13 @@ export const Utils = {
     _performCopy: async (text, item) => {
       try {
         if (!text || text.trim() === '') {
-          // 暂时保留 Toast 引用，待后续模块拆分后再调整
           console.log('暂无内容可复制');
           return false;
         }
 
-        // 使用现代 Clipboard API
         if (navigator.clipboard && navigator.clipboard.writeText) {
           await navigator.clipboard.writeText(text);
         } else {
-          // 降级方案
           const textArea = document.createElement('textarea');
           textArea.value = text;
           textArea.style.cssText = 'position:fixed;left:-9999px;top:0;';
@@ -822,8 +611,7 @@ export const Utils = {
           if (!successful) throw new Error('复制失败');
         }
 
-        // 显示成功反馈
-        Utils.SwipeRightCopyHandler._showCopyFeedback(item, text);
+        this._showCopyFeedback(item, text);
         console.log(`已复制: ${text.substring(0, 20)}${text.length > 20 ? '...' : ''}`);
         return true;
       } catch (e) {
@@ -837,80 +625,68 @@ export const Utils = {
       const key = `${prefix}_${idx}`;
       const touch = e.touches[0];
       
-      Utils.SwipeRightCopyHandler._startX[key] = touch.clientX;
-      Utils.SwipeRightCopyHandler._startY[key] = touch.clientY;
-      Utils.SwipeRightCopyHandler._currentX[key] = touch.clientX;
-      Utils.SwipeRightCopyHandler._currentY[key] = touch.clientY;
-      Utils.SwipeRightCopyHandler._startTime[key] = Date.now();
-      Utils.SwipeRightCopyHandler._isHorizontal[key] = false;
-      Utils.SwipeRightCopyHandler._hasDirection[key] = false;
-      Utils.SwipeRightCopyHandler._isRightSwipe[key] = false;
+      this._startX[key] = touch.clientX;
+      this._startY[key] = touch.clientY;
+      this._currentX[key] = touch.clientX;
+      this._currentY[key] = touch.clientY;
+      this._startTime[key] = Date.now();
+      this._isHorizontal[key] = false;
+      this._hasDirection[key] = false;
+      this._isRightSwipe[key] = false;
     },
 
     handleTouchMove: function(e, idx, prefix) {
       const key = `${prefix}_${idx}`;
-      if (Utils.SwipeRightCopyHandler._startX[key] === undefined) return;
+      if (this._startX[key] === undefined) return;
       
       const touch = e.touches[0];
-      Utils.SwipeRightCopyHandler._currentX[key] = touch.clientX;
-      Utils.SwipeRightCopyHandler._currentY[key] = touch.clientY;
+      this._currentX[key] = touch.clientX;
+      this._currentY[key] = touch.clientY;
       
-      const deltaX = touch.clientX - Utils.SwipeRightCopyHandler._startX[key];
-      const deltaY = touch.clientY - Utils.SwipeRightCopyHandler._startY[key];
+      const deltaX = touch.clientX - this._startX[key];
+      const deltaY = touch.clientY - this._startY[key];
       const absDeltaX = Math.abs(deltaX);
       const absDeltaY = Math.abs(deltaY);
       
-      // 方向判断阶段（低延迟，15px阈值）
-      if (!Utils.SwipeRightCopyHandler._hasDirection[key]) {
-        if (absDeltaX > Utils.SwipeRightCopyHandler._directionThreshold || 
-            absDeltaY > Utils.SwipeRightCopyHandler._directionThreshold) {
-          Utils.SwipeRightCopyHandler._hasDirection[key] = true;
+      if (!this._hasDirection[key]) {
+        if (absDeltaX > this._directionThreshold || 
+            absDeltaY > this._directionThreshold) {
+          this._hasDirection[key] = true;
           
-          // 计算滑动角度
-          const angle = Utils.SwipeRightCopyHandler._getSwipeAngle(deltaX, deltaY);
+          const angle = this._getSwipeAngle(deltaX, deltaY);
           
-          // 判断是否为水平滑动且角度在允许范围内
-          const isHorizontal = absDeltaX > absDeltaY && angle <= Utils.SwipeRightCopyHandler._maxAngle;
-          Utils.SwipeRightCopyHandler._isHorizontal[key] = isHorizontal;
-          Utils.SwipeRightCopyHandler._isRightSwipe[key] = deltaX > 0; // 向右滑动
+          const isHorizontal = absDeltaX > absDeltaY && angle <= this._maxAngle;
+          this._isHorizontal[key] = isHorizontal;
+          this._isRightSwipe[key] = deltaX > 0;
           
-          // 如果不是向右滑动，不处理
           if (!isHorizontal || deltaX <= 0) {
             return;
           }
         }
       }
       
-      // 如果不是向右滑动，不处理
-      if (!Utils.SwipeRightCopyHandler._isHorizontal[key] || 
-          !Utils.SwipeRightCopyHandler._isRightSwipe[key]) {
+      if (!this._isHorizontal[key] || !this._isRightSwipe[key]) {
         return;
       }
       
-      // 阻止默认行为
       e.preventDefault();
       
       const item = e.currentTarget;
       
-      // 计算滑动进度（0-1）
-      const progress = Math.min(absDeltaX / Utils.SwipeRightCopyHandler._threshold, 1);
+      const progress = Math.min(absDeltaX / this._threshold, 1);
       
-      // 显示滑动轨迹指示器
-      Utils.SwipeRightCopyHandler._showSwipeIndicator(item, progress);
+      this._showSwipeIndicator(item, progress);
       
-      // 添加视觉反馈 - 轻微右移
       const content = item.querySelector('.special-history-content');
       if (content) {
-        const translateX = Math.min(deltaX * 0.3, 30); // 最大移动30px
+        const translateX = Math.min(deltaX * 0.3, 30);
         content.style.transform = `translateX(${translateX}px)`;
         content.style.transition = 'transform 0.05s ease-out';
       }
       
-      // 达到阈值时改变指示器颜色
       const indicator = item.querySelector('.swipe-indicator');
-      if (indicator && absDeltaX >= Utils.SwipeRightCopyHandler._threshold) {
-        indicator.style.background = 'linear-gradient(to bottom, #34C759, #30D158)';
-        indicator.style.boxShadow = '0 0 8px rgba(52, 199, 89, 0.6)';
+      if (indicator && absDeltaX >= this._threshold) {
+        indicator.classList.add('ready');
       }
     },
 
@@ -918,58 +694,128 @@ export const Utils = {
       const key = `${prefix}_${idx}`;
       const item = e.currentTarget;
       
-      // 恢复内容位置
       const content = item.querySelector('.special-history-content');
       if (content) {
         content.style.transform = 'translateX(0)';
         content.style.transition = 'transform 0.3s ease-out';
       }
       
-      // 如果不是向右滑动，直接清理
-      if (!Utils.SwipeRightCopyHandler._isHorizontal[key] || 
-          !Utils.SwipeRightCopyHandler._isRightSwipe[key]) {
-        Utils.SwipeRightCopyHandler._hideSwipeIndicator(item);
-        Utils.SwipeRightCopyHandler._cleanup(key);
+      if (!this._isHorizontal[key] || !this._isRightSwipe[key]) {
+        this._hideSwipeIndicator(item);
+        this._cleanup(key);
         return;
       }
       
-      const deltaX = Utils.SwipeRightCopyHandler._currentX[key] - Utils.SwipeRightCopyHandler._startX[key];
-      const deltaTime = Date.now() - Utils.SwipeRightCopyHandler._startTime[key];
+      const deltaX = this._currentX[key] - this._startX[key];
+      const deltaTime = Date.now() - this._startTime[key];
       
-      // 判断是否达到触发条件（距离阈值 或 快速滑动）
-      const isQuickSwipe = deltaTime < 200 && deltaX > 40; // 快速滑动（200ms内40px）
-      const isLongSwipe = deltaX >= Utils.SwipeRightCopyHandler._threshold; // 长距离滑动
+      const isQuickSwipe = deltaTime < 200 && deltaX > 40;
+      const isLongSwipe = deltaX >= this._threshold;
       
       if (isQuickSwipe || isLongSwipe) {
-        // 获取要复制的文本
         const text = getTextCallback ? getTextCallback(item) : 
-                     Utils.SwipeRightCopyHandler._getElementText(content || item);
+                     this._getElementText(content || item);
         
-        // 执行复制
-        Utils.SwipeRightCopyHandler._performCopy(text, item);
+        this._performCopy(text, item);
       }
       
-      // 隐藏指示器并清理
-      Utils.SwipeRightCopyHandler._hideSwipeIndicator(item);
-      Utils.SwipeRightCopyHandler._cleanup(key);
+      this._hideSwipeIndicator(item);
+      this._cleanup(key);
     },
 
-    // 清理状态
-    _cleanup: (key) => {
-      delete Utils.SwipeRightCopyHandler._startX[key];
-      delete Utils.SwipeRightCopyHandler._startY[key];
-      delete Utils.SwipeRightCopyHandler._currentX[key];
-      delete Utils.SwipeRightCopyHandler._currentY[key];
-      delete Utils.SwipeRightCopyHandler._startTime[key];
-      delete Utils.SwipeRightCopyHandler._isHorizontal[key];
-      delete Utils.SwipeRightCopyHandler._hasDirection[key];
-      delete Utils.SwipeRightCopyHandler._isRightSwipe[key];
+    _cleanup: function(key) {
+      delete this._startX[key];
+      delete this._startY[key];
+      delete this._currentX[key];
+      delete this._currentY[key];
+      delete this._startTime[key];
+      delete this._isHorizontal[key];
+      delete this._hasDirection[key];
+      delete this._isRightSwipe[key];
     }
   },
 
   // 在应用初始化时设置滑动处理器
   initSwipeHandlers: () => {
     // 右滑复制功能已集成到其他模块
+  },
+
+  /**
+   * 深拷贝对象
+   * @param {any} obj - 要拷贝的对象
+   * @returns {any} 拷贝后的对象
+   */
+  deepClone: (obj) => {
+    try {
+      if(typeof obj !== 'object' || obj === null) {
+        return obj;
+      }
+      if(typeof structuredClone === 'function') {
+        return structuredClone(obj);
+      }
+      return JSON.parse(JSON.stringify(obj));
+    } catch(e) {
+      console.error('深拷贝失败', e);
+      return obj;
+    }
+  },
+
+  /**
+   * 标签值类型转换（解决数字/字符串匹配问题）
+   * @param {string|number} value - 标签值
+   * @param {string} group - 分组名
+   * @returns {string|number} 转换后的值
+   */
+  formatTagValue: (value, group) => {
+    return CONFIG.NUMBER_GROUPS.includes(group) ? Number(value) : value;
+  },
+
+  /**
+   * 获取安全区顶部高度
+   * @returns {number} 安全区高度(px)
+   */
+  getSafeTop: () => {
+    return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-top')) || 0;
+  },
+
+  /**
+   * 校验筛选方案格式
+   * @param {any} item - 要校验的方案对象
+   * @returns {boolean} 是否合法
+   */
+  validateFilterItem: (item) => {
+    return item && 
+      typeof item === 'object' && 
+      typeof item.name === 'string' && 
+      item.selected && typeof item.selected === 'object' &&
+      Array.isArray(item.excluded);
+  },
+
+  /**
+   * 生成DocumentFragment优化DOM渲染
+   * @param {Array} list - 要渲染的列表
+   * @param {Function} renderItem - 单个元素渲染函数
+   * @returns {DocumentFragment} 生成的文档片段
+   */
+  createFragment: (list, renderItem) => {
+    const fragment = document.createDocumentFragment();
+    list.forEach((item, index) => {
+      const el = renderItem(item, index);
+      if(el) fragment.appendChild(el);
+    });
+    return fragment;
+  },
+
+  /**
+   * HTML转义函数，防止XSS攻击
+   * @param {string} text - 要转义的文本
+   * @returns {string} 转义后的文本
+   */
+  escapeHtml: (text) => {
+    if (typeof text !== 'string') return text;
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   },
 
   /**
@@ -1081,7 +927,6 @@ export const Utils = {
   createModal: (options) => {
     const { title, content, className = 'modal' } = options;
     
-    // 创建弹窗容器
     const modal = document.createElement('div');
     modal.className = `${className}-modal`;
     modal.innerHTML = `
@@ -1098,7 +943,6 @@ export const Utils = {
     
     document.body.appendChild(modal);
     
-    // 点击模态框外部关闭
     modal.addEventListener('click', (e) => {
       if(e.target === modal) {
         modal.remove();
@@ -1116,7 +960,6 @@ export const Utils = {
   traditionalToSimplified: (text) => {
     if (typeof text !== 'string') return text;
     
-    // 常用繁简映射表（可根据需要扩展）
     const traditionalToSimplifiedMap = {
       '繁': '繁',
       '體': '体',
@@ -1138,7 +981,6 @@ export const Utils = {
       '歷': '历',
       '史': '史',
       '特': '特',
-      '碼': '码',
       '生': '生',
       '肖': '肖',
       '波': '波',
@@ -1188,7 +1030,6 @@ export const Utils = {
   simplifiedToTraditional: (text) => {
     if (typeof text !== 'string') return text;
     
-    // 常用简繁映射表（可根据需要扩展）
     const simplifiedToTraditionalMap = {
       '繁': '繁',
       '体': '體',
@@ -1259,13 +1100,9 @@ export const Utils = {
   handleError: (error, context = 'Unknown') => {
     console.error(`[${context}]`, error);
     
-    // 在开发环境下显示详细错误信息
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       console.trace();
     }
-    
-    // 可以在这里集成错误上报服务
-    // sendErrorReport(error, context);
   },
 
   /**

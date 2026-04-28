@@ -1,3 +1,67 @@
+/* 删除指示器样式 */
+.swipe-delete-indicator {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, #ff3b30, #ff453a);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.1s ease-out;
+  z-index: 10;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* 删除确认弹窗遮罩层 */
+.delete-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* 删除确认弹窗内容 */
+.delete-confirm-overlay .dialog-content {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 90%;
+  width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transform: scale(0.9);
+  transition: transform 0.2s ease;
+}
+
+/* 弹窗按钮悬停效果 */
+.delete-confirm-overlay .cancel-delete-btn:hover {
+  background: var(--border);
+}
+
+.delete-confirm-overlay .confirm-delete-btn:hover {
+  background: #e6352b;
+}
+
+.delete-confirm-overlay .cancel-delete-btn:active {
+  transform: scale(0.98);
+}
+
+.delete-confirm-overlay .confirm-delete-btn:active {
+  transform: scale(0.98);
+}
+
 /* 分析页面专属样式（含分析弹窗与统计细节） */
 /* ====================== 分析页面样式 ====================== */
 /* 分析卡片 */
@@ -691,6 +755,15 @@
 
 /* 历史记录项 - Going 1.0 风格 */
 .history-item {
+  position: relative;        /* 必须：支持绝对定位的删除按钮 */
+  overflow: visible;         /* 必须：允许删除按钮显示在外面 */
+  touch-action: pan-y;       /* 允许垂直滚动，拦截水平滑动 */
+  user-select: none;         /* 禁止文本选择 */
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;    /* 性能优化 */
+}
+.history-item {
   display: flex;
   flex-direction: column;
   padding: 14px 0;
@@ -1001,12 +1074,6 @@
 }
 
 /* 分析汇总项 */
-.analysis-summary-item {
-}
-
-.zodiac-frequency-item {
-}
-
 .selected-zodiac-item .zodiac-name {
   font-size: 16px;
   font-weight: 700;
@@ -1237,5 +1304,57 @@
     font-size: 10px;
     padding: 2px 4px;
   }
+}
+
+#problems_and_diagnostics {
+  background: var(--bg);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-top: var(--spacing-md);
+}
+
+#problems_and_diagnostics .section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+#problems_and_diagnostics .problem-item {
+  background: var(--card);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  border-left: 4px solid var(--warning);
+}
+
+#problems_and_diagnostics .problem-title {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--spacing-sm);
+}
+
+#problems_and_diagnostics .problem-description {
+  font-size: var(--font-size-sm);
+  color: var(--sub-text);
+  line-height: 1.6;
+  margin-bottom: var(--spacing-sm);
+}
+
+#problems_and_diagnostics .diagnosis-result {
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text);
+}
+
+#problems_and_diagnostics .diagnosis-result strong {
+  color: var(--primary);
+  font-weight: 600;
 }
 
