@@ -496,37 +496,42 @@ export const EventBinder = {
     EventBinder._touchEndX = e.changedTouches[0].screenX;
     EventBinder._touchEndY = e.changedTouches[0].screenY;
     
-    // 检查是否在分析页面
-    const analysisPage = document.getElementById('analysisPage');
-    if(!analysisPage || analysisPage.style.display === 'none') return;
-    
-    // 获取当前激活的标签
-    const activeTabBtn = document.querySelector('.analysis-tab-btn.active');
-    if(!activeTabBtn) return;
-    
-    const currentTab = activeTabBtn.dataset.analysisTab;
-    const tabs = ['history', 'analysis', 'zodiac'];
-    const tabNames = ['历史记录', '维度分析', '生肖关联'];
-    const currentIndex = tabs.indexOf(currentTab);
-    if(currentIndex === -1) return;
-    
     const screenWidth = window.innerWidth;
     const startX = EventBinder._touchStartX;
     const endX = EventBinder._touchEndX;
     const deltaX = endX - startX;
     const deltaY = EventBinder._touchEndY - EventBinder._touchStartY;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
     
-    // 检查是否为水平滑动（Y轴偏移不能太大）
-    if(Math.abs(deltaY) > Math.abs(deltaX)) return;
+    if(absDeltaY > absDeltaX) return;
+    if(absDeltaX < EventBinder._minSwipeDistance) return;
     
-    // 检查滑动距离是否足够
-    if(Math.abs(deltaX) < EventBinder._minSwipeDistance) return;
+    if(deltaX > 0 && startX < EventBinder._edgeSwipeWidth) {
+      const detailPages = ['selectedZodiacDetailPage', 'mlPredictionDetailPage', 'zodiacPredictionDetailPage', 'hotNumbersDetailPage', 'specialDetailPage'];
+      for(const pageId of detailPages) {
+        const page = document.getElementById(pageId);
+        if(page && page.style.display !== 'none') {
+          Router.navigate('record');
+          return;
+        }
+      }
+    }
     
-    // 从左边缘向右滑动 - 切换到上一个标签
+    const analysisPage = document.getElementById('analysisPage');
+    if(!analysisPage || analysisPage.style.display === 'none') return;
+    
+    const activeTabBtn = document.querySelector('.analysis-tab-btn.active');
+    if(!activeTabBtn) return;
+    
+    const currentTab = activeTabBtn.dataset.analysisTab;
+    const tabs = ['history', 'analysis', 'zodiac'];
+    const currentIndex = tabs.indexOf(currentTab);
+    if(currentIndex === -1) return;
+    
     if(deltaX > 0 && startX < EventBinder._edgeSwipeWidth && currentIndex > 0) {
       Business.switchAnalysisTab(tabs[currentIndex - 1]);
     }
-    // 从右边缘向左滑动 - 切换到下一个标签
     else if(deltaX < 0 && startX > screenWidth - EventBinder._edgeSwipeWidth && currentIndex < tabs.length - 1) {
       Business.switchAnalysisTab(tabs[currentIndex + 1]);
     }
