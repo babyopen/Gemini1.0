@@ -271,8 +271,6 @@ div.history-tag.history-tag-actual.history-tag-miss {
   will-change: transform, opacity, max-height;
   padding: 14px 0;
   border-bottom: 1px solid var(--border);
-  flex-direction: column;
-  gap: 12px;
 }
 
 .history-item:last-child {
