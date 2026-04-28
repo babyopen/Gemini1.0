@@ -95,7 +95,7 @@ export const prediction = {
     try {
       console.log('[Prediction] 更新精选特码历史对比...');
       
-      const numberRecords = Storage.get('numberRecords', []);
+      const numberRecords = Storage.get(Storage.KEYS.NUMBER_RECORDS, []);
       
       if (numberRecords.length === 0) {
         Toast.show('暂无历史记录');
@@ -182,7 +182,7 @@ export const prediction = {
     try {
       console.log('[Prediction] 清空精选特码历史...');
       
-      const numberRecords = Storage.get('numberRecords', []);
+      const numberRecords = Storage.get(Storage.KEYS.NUMBER_RECORDS, []);
       
       if (numberRecords.length === 0) {
         Toast.show('暂无历史记录');
@@ -190,7 +190,7 @@ export const prediction = {
       }
       
       if (confirm('确定清空所有精选特码历史吗？此操作不可恢复！')) {
-        Storage.set('numberRecords', []);
+        Storage.set(Storage.KEYS.NUMBER_RECORDS, []);
         record.renderSpecialHistory();
         record.renderPredictionStatistics();
         Toast.show('已清空精选特码历史');
@@ -206,7 +206,7 @@ export const prediction = {
     try {
       console.log('[Prediction] 删除精选特码历史项:', index);
       
-      const numberRecords = Storage.get('numberRecords', []);
+      const numberRecords = Storage.get(Storage.KEYS.NUMBER_RECORDS, []);
       
       if (index < 0 || index >= numberRecords.length) {
         Toast.show('删除失败：记录不存在');
@@ -215,9 +215,9 @@ export const prediction = {
       
       const recordToDelete = numberRecords[index];
       
-      if (confirm(`确定删除 ${recordToDelete.period || '该'} 期的精选特码记录吗？`)) {
+      if (confirm(`确定删除该精选特码记录吗？`)) {
         numberRecords.splice(index, 1);
-        Storage.set('numberRecords', numberRecords);
+        Storage.set(Storage.KEYS.NUMBER_RECORDS, numberRecords);
         record.renderSpecialHistory();
         record.renderPredictionStatistics();
         Toast.show('删除成功');
@@ -233,7 +233,7 @@ export const prediction = {
     try {
       console.log('[Prediction] 复制精选特码历史:', index);
       
-      const numberRecords = Storage.get('numberRecords', []);
+      const numberRecords = Storage.get(Storage.KEYS.NUMBER_RECORDS, []);
       
       if (index < 0 || index >= numberRecords.length) {
         Toast.show('复制失败：记录不存在');
@@ -260,7 +260,7 @@ export const prediction = {
     try {
       console.log('[Prediction] 显示精选特码详情:', index);
       
-      const numberRecords = Storage.get('numberRecords', []);
+      const numberRecords = Storage.get(Storage.KEYS.NUMBER_RECORDS, []);
       
       if (index < 0 || index >= numberRecords.length) {
         Toast.show('查看失败：记录不存在');
@@ -382,22 +382,14 @@ export const prediction = {
 
   getFilteredSpecialHistory: () => {
     try {
-      console.log('[Prediction] 获取筛选后的精选特码历史...');
+      console.log('[Prediction] 获取精选特码历史...');
       
-      let numberRecords = Storage.get('numberRecords', []);
-      
-      const activePeriodBtn = document.querySelector('.special-period-btn.active');
-      const selectedPeriod = activePeriodBtn ? activePeriodBtn.dataset.period : 'all';
-      
-      if (selectedPeriod !== 'all') {
-        const periodNum = parseInt(selectedPeriod);
-        numberRecords = numberRecords.filter((_, index) => index < periodNum);
-      }
+      const numberRecords = Storage.get(Storage.KEYS.NUMBER_RECORDS, []);
       
       return numberRecords;
     } catch (error) {
-      console.error('[Prediction] 获取筛选后的精选特码历史失败:', error);
-      return Storage.get('numberRecords', []);
+      console.error('[Prediction] 获取精选特码历史失败:', error);
+      return [];
     }
   },
 
@@ -1582,7 +1574,7 @@ export const prediction = {
 
   getSpecialStats: () => {
     try {
-      const numberRecords = Storage.get('numberRecords', []);
+      const numberRecords = Storage.get(Storage.KEYS.NUMBER_RECORDS, []);
       let hit = 0, miss = 0, pending = 0;
       
       numberRecords.forEach(rec => {

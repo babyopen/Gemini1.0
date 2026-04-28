@@ -446,18 +446,8 @@
       <!-- 精选特码筛选弹窗 -->
       <div id="specialFilterPopup" style="display: none; position: absolute; top: 60px; right: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); z-index: 1000; min-width: 280px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <span style="font-weight: 600; font-size: 14px;">🎯 筛选条件</span>
+          <span style="font-weight: 600; font-size: 14px;">🎯 筛选号码数量</span>
           <button data-action="closeSpecialFilterPopup" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--sub-text);">&times;</button>
-        </div>
-        
-        <div style="margin-bottom: 12px;">
-          <div style="font-size: 12px; color: var(--sub-text); margin-bottom: 8px;">📅 期数</div>
-          <div class="mode-switch-btns" style="display: flex; gap: 4px;">
-            <button class="btn-mini mode-btn special-history-period-btn active" data-period="10" data-action="switchSpecialHistoryPeriod" title="10期">10</button>
-            <button class="btn-mini mode-btn special-history-period-btn" data-period="20" data-action="switchSpecialHistoryPeriod" title="20期">20</button>
-            <button class="btn-mini mode-btn special-history-period-btn" data-period="30" data-action="switchSpecialHistoryPeriod" title="30期">30</button>
-            <button class="btn-mini mode-btn special-history-period-btn" data-period="all" data-action="switchSpecialHistoryPeriod" title="全部期数">全</button>
-          </div>
         </div>
         
         <div style="margin-bottom: 12px;">
@@ -507,12 +497,6 @@
         <div id="specialFiltersPanel" class="filter-panel" style="margin-top:12px;">
           <div class="filter-panel-row">
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <div class="filter-btn-group">
-                <button class="btn-mini special-period-btn active" data-period="10">10期</button>
-                <button class="btn-mini special-period-btn" data-period="20">20期</button>
-                <button class="btn-mini special-period-btn" data-period="30">30期</button>
-                <button class="btn-mini special-period-btn" data-period="all">全年</button>
-              </div>
               <div class="filter-btn-group">
                 <button class="btn-mini special-num-btn active" data-num="5">5个</button>
                 <button class="btn-mini special-num-btn" data-num="10">10个</button>
@@ -601,19 +585,19 @@
     <div class="card" style="margin-top:16px">
       <div class="card-header"><h2>账户设置</h2></div>
       <div class="card-body" style="padding:0">
-        <div class="profile-menu-item" data-action="openSettings">
+        <div class="profile-menu-item" data-action="${CONFIG.ACTIONS.OPEN_SETTINGS}">
           <span>⚙️ 通用设置</span>
           <span style="color:var(--sub-text)">›</span>
         </div>
-        <div class="profile-menu-item" data-action="openNotification">
+        <div class="profile-menu-item" data-action="${CONFIG.ACTIONS.OPEN_NOTIFICATION}">
           <span>🔔 通知设置</span>
           <span style="color:var(--sub-text)">›</span>
         </div>
-        <div class="profile-menu-item" data-action="openPrivacy">
+        <div class="profile-menu-item" data-action="${CONFIG.ACTIONS.OPEN_PRIVACY}">
           <span>🔒 隐私设置</span>
           <span style="color:var(--sub-text)">›</span>
         </div>
-        <div class="profile-menu-item" data-action="clearCache">
+        <div class="profile-menu-item" data-action="${CONFIG.ACTIONS.CLEAR_CACHE}">
           <span>🗑️ 清除缓存</span>
           <span style="color:var(--sub-text)">›</span>
         </div>
@@ -624,19 +608,19 @@
     <div class="card" style="margin-top:16px">
       <div class="card-header"><h2>系统功能</h2></div>
       <div class="card-body" style="padding:0">
-        <div class="profile-menu-item" data-action="openHelp">
+        <div class="profile-menu-item" data-action="${CONFIG.ACTIONS.OPEN_HELP}">
           <span>❓ 使用帮助</span>
           <span style="color:var(--sub-text)">›</span>
         </div>
-        <div class="profile-menu-item" data-action="openFeedback">
+        <div class="profile-menu-item" data-action="${CONFIG.ACTIONS.OPEN_FEEDBACK}">
           <span>💬 意见反馈</span>
           <span style="color:var(--sub-text)">›</span>
         </div>
-        <div class="profile-menu-item" data-action="openAbout">
+        <div class="profile-menu-item" data-action="${CONFIG.ACTIONS.OPEN_ABOUT}">
           <span>ℹ️ 关于我们</span>
           <span style="color:var(--sub-text)">›</span>
         </div>
-        <div class="profile-menu-item" data-action="checkUpdate">
+        <div class="profile-menu-item" data-action="${CONFIG.ACTIONS.CHECK_UPDATE}">
           <span>🔄 检查更新</span>
           <span style="color:var(--sub-text)">›</span>
         </div>
@@ -701,15 +685,6 @@
               <option value="all">全年数据</option>
             </select>
             <input type="number" id="zodiacCustomNum" class="analysis-filter-input" placeholder="自定义期数">
-            <!-- 号码数量选择器 -->
-            <select id="numCountSelect" class="analysis-filter-select">
-              <option value="5" selected>5个号</option>
-              <option value="10">10个号</option>
-              <option value="15">15个号</option>
-              <option value="20">20个号</option>
-              <option value="custom">自定义</option>
-            </select>
-            <input type="number" id="customNumCount" class="analysis-filter-input" placeholder="自定义数量" style="display:none;">
             <button class="analysis-filter-btn" data-action="syncZodiacAnalyze">确认</button>
           </div>
 
@@ -774,6 +749,15 @@
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
                 <span>✅ 精选特码：</span>
                 <div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
+                  <!-- 号码数量选择器 -->
+                  <select id="numCountSelect" class="analysis-filter-select" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);">
+                    <option value="5" selected>5个号</option>
+                    <option value="10">10个号</option>
+                    <option value="15">15个号</option>
+                    <option value="20">20个号</option>
+                    <option value="custom">自定义</option>
+                  </select>
+                  <input type="number" id="customNumCount" class="analysis-filter-input" placeholder="自定义数量" style="display:none;width:80px;">
                   <!-- 模式切换按钮组 -->
                   <div class="mode-switch-btns" style="display:flex;gap:4px;margin-right:8px;">
                     <button class="btn-mini mode-btn active" data-mode="hot" data-action="switchSpecialMode" title="🔥 热号模式">🔥</button>

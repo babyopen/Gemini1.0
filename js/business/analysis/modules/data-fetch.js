@@ -73,19 +73,11 @@ export const dataFetch = {
   _fetchLatestData: async (retries = 3) => {
     dataFetch._log('info', `开始获取最新开奖记录，重试次数: ${retries}`);
     
-    // 定义多个数据源（主数据源和备用数据源）
+    // 定义数据源
     const dataSources = [
       {
         name: '主数据源',
         url: ApiConfig.getLatestApi()
-      },
-      {
-        name: '备用数据源1',
-        url: 'https://api.ka666.com/latest'
-      },
-      {
-        name: '备用数据源2',
-        url: 'https://api.macau6.com/latest'
       }
     ];
     
@@ -151,10 +143,23 @@ export const dataFetch = {
         }
         
         dataFetch._log('info', '响应成功，开始解析数据...');
-        const data = await res.json();
-        dataFetch._log('info', `数据解析成功，数据长度: ${data.data ? data.data.length : 0}`);
+        const response = await res.json();
+        dataFetch._log('info', `数据解析成功，响应: ${JSON.stringify(response).substring(0, 200)}`);
         
-        return data.data || [];
+        // 处理两种不同的响应格式
+        if (Array.isArray(response)) {
+          // 格式1: 直接返回数组（某些 API）
+          return response;
+        } else if (response.result && response.data) {
+          // 格式2: {result, code, data} 格式
+          if (response.result === true && Array.isArray(response.data)) {
+            return response.data;
+          }
+        }
+        
+        // 如果都不匹配，返回空数组
+        dataFetch._log('warn', '未识别的响应格式:', response);
+        return [];
       } catch (e) {
         dataFetch._log('error', `获取历史数据失败（尝试 ${i + 1}/${retries}）:`, e);
         if (i === retries - 1) {

@@ -445,9 +445,9 @@ export const Storage = {
 
       const records = Storage.get(Storage.KEYS.NUMBER_RECORDS, []);
       
+      // ✅ 简化版：只按 issue 和 numCount 判断重复（不再按 period）
       const existingIndex = records.findIndex(r => 
         r.issue === recordData.issue && 
-        r.period === recordData.period && 
         r.numCount === recordData.numCount
       );
       
@@ -457,7 +457,7 @@ export const Storage = {
           ...recordData,
           updatedAt: Date.now()
         };
-        console.log('🔄 更新现有记录:', { issue: recordData.issue, period: recordData.period, numCount: recordData.numCount });
+        console.log('🔄 更新现有记录:', { issue: recordData.issue, numCount: recordData.numCount });
       } else {
         records.unshift({
           ...recordData,
@@ -466,7 +466,7 @@ export const Storage = {
           checked: false,
           matched: null
         });
-        console.log('➕ 添加新记录:', { issue: recordData.issue, period: recordData.period, numCount: recordData.numCount });
+        console.log('➕ 添加新记录:', { issue: recordData.issue, numCount: recordData.numCount });
       }
       
       if (records.length > 200) {
@@ -852,14 +852,14 @@ export const Storage = {
     }
   },
 
+  // ✅ 简化版保存精选特码筛选条件（只保存号码数量）
   saveSpecialFilters: (filters) => {
     try {
       if (!filters || typeof filters !== 'object') {
         return false;
       }
-      const { period, numCount } = filters;
+      const { numCount } = filters;
       const filterData = {
-        period: period || '10',
         numCount: numCount || '5'
       };
       return Storage.set(Storage.KEYS.SPECIAL_FILTERS, filterData);
@@ -869,19 +869,19 @@ export const Storage = {
     }
   },
 
+  // ✅ 简化版加载精选特码筛选条件（只加载号码数量）
   loadSpecialFilters: () => {
     try {
       const filters = Storage.get(Storage.KEYS.SPECIAL_FILTERS, null);
       if (filters && typeof filters === 'object') {
         return {
-          period: filters.period || '10',
           numCount: filters.numCount || '5'
         };
       }
-      return { period: '10', numCount: '5' };
+      return { numCount: '5' };
     } catch (e) {
       console.error('加载精选特码筛选条件失败:', e);
-      return { period: '10', numCount: '5' };
+      return { numCount: '5' };
     }
   }
 

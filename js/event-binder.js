@@ -242,10 +242,10 @@ export const EventBinder = {
       if(action === CONFIG.ACTIONS.TOP_FILTER) Business.topFilter(Number(index));
       if(action === CONFIG.ACTIONS.DELETE_FILTER) Business.deleteFilter(Number(index));
       // 收藏操作
-      if(action === 'favoriteFilter') Business.favoriteFilter(Number(index));
-      if(action === 'loadFavorite') Business.loadFavorite(Number(index));
-      if(action === 'renameFavorite') Business.renameFavorite(Number(index));
-      if(action === 'copyFavorite') Business.copyFavorite(Number(index));
+      if(action === CONFIG.ACTIONS.FAVORITE_FILTER) Business.favoriteFilter(Number(index));
+      if(action === CONFIG.ACTIONS.LOAD_FAVORITE) Business.loadFavorite(Number(index));
+      if(action === CONFIG.ACTIONS.RENAME_FAVORITE) Business.renameFavorite(Number(index));
+      if(action === CONFIG.ACTIONS.COPY_FAVORITE) Business.copyFavorite(Number(index));
       // 导航操作
       if (action === CONFIG.ACTIONS.SWITCH_NAV) {
         const targetIndex = actionBtn.dataset.index;
@@ -255,14 +255,14 @@ export const EventBinder = {
         return;
       }
       // 我的页面菜单操作
-      if(action === 'openSettings') Business.openSettings();
-      if(action === 'openNotification') Business.openNotification();
-      if(action === 'openPrivacy') Business.openPrivacy();
-      if(action === 'clearCache') Business.clearCache();
-      if(action === 'openHelp') Business.openHelp();
-      if(action === 'openFeedback') Business.openFeedback();
-      if(action === 'openAbout') Business.openAbout();
-      if(action === 'checkUpdate') Business.checkUpdate();
+      if(action === CONFIG.ACTIONS.OPEN_SETTINGS) Business.openSettings();
+      if(action === CONFIG.ACTIONS.OPEN_NOTIFICATION) Business.openNotification();
+      if(action === CONFIG.ACTIONS.OPEN_PRIVACY) Business.openPrivacy();
+      if(action === CONFIG.ACTIONS.CLEAR_CACHE) Business.clearCache();
+      if(action === CONFIG.ACTIONS.OPEN_HELP) Business.openHelp();
+      if(action === CONFIG.ACTIONS.OPEN_FEEDBACK) Business.openFeedback();
+      if(action === CONFIG.ACTIONS.OPEN_ABOUT) Business.openAbout();
+      if(action === CONFIG.ACTIONS.CHECK_UPDATE) Business.checkUpdate();
       // 分析页面操作
       if(action === 'refreshHistory') Business.refreshHistory();
       if(action === 'syncAnalyze') Business.syncAnalyze();

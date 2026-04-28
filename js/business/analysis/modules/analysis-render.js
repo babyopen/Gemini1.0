@@ -1016,11 +1016,10 @@ export const analysisRender = {
       const issue = nextIssueObj.full;
       console.log('✅ 获取到下一期期号:', issue);
 
-      // ✅ 定义所有筛选条件组合
-      const allPeriods = [10, 20, 30, 'all'];  // 所有期数选项
+      // ✅ 简化版：只定义号码数量选项（不再按期数保存）
       const allNumCounts = [5, 10, 15, 20];    // 所有号码数量选项
       
-      console.log('🎯 准备保存所有筛选条件组合:', { periods: allPeriods, numCounts: allNumCounts });
+      console.log('🎯 准备保存精选特码记录:', { numCounts: allNumCounts });
 
       // 转换为字符串格式
       const allNumbersStr = finalNums.map(n => String(n).padStart(2, '0'));
@@ -1047,42 +1046,38 @@ export const analysisRender = {
         let successCount = 0;
         let failCount = 0;
         
-        // 遍历所有期数选项
-        allPeriods.forEach(period => {
-          // 遍历所有号码数量选项
-          allNumCounts.forEach(numCount => {
-            try {
-              // ✅ 只保存完整的号码列表，不截取
-              // 在显示时根据 numCount 动态截取
-              
-              // 构建记录对象
-              const recordData = {
-                issue: issue,
-                period: period,           // 期数范围：10/20/30/all
-                numCount: numCount,       // 号码数量：5/10/15/20
-                numbers: allNumbersStr,   // 保存完整列表
-                hotNumbers: hotNumbersStr, // 保存完整热号列表
-                coldNumbers: coldNumbersStr, // 保存完整冷号列表
-                mode: mode,               // 保存当前模式
-                type: type                // 保存类型（用于筛选）
-              };
-              
-              // 保存记录
-              const success = record.saveNumberRecord(recordData);
-              if (success) {
-                successCount++;
-              } else {
-                failCount++;
-              }
-            } catch (err) {
-              console.error(`❌ 保存记录失败 [${period}期/${numCount}个]:`, err);
+        // ✅ 简化版：只遍历所有号码数量选项（不再按期数保存）
+        allNumCounts.forEach(numCount => {
+          try {
+            // ✅ 只保存完整的号码列表，不截取
+            // 在显示时根据 numCount 动态截取
+            
+            // 构建记录对象
+            const recordData = {
+              issue: issue,
+              numCount: numCount,         // 号码数量：5/10/15/20
+              numbers: allNumbersStr,     // 保存完整列表
+              hotNumbers: hotNumbersStr,  // 保存完整热号列表
+              coldNumbers: coldNumbersStr, // 保存完整冷号列表
+              mode: mode,                // 保存当前模式
+              type: type                 // 保存类型（用于筛选）
+            };
+            
+            // 保存记录
+            const success = record.saveNumberRecord(recordData);
+            if (success) {
+              successCount++;
+            } else {
               failCount++;
             }
-          });
+          } catch (err) {
+            console.error(`❌ 保存记录失败 [${numCount}个]:`, err);
+            failCount++;
+          }
         });
         
-        console.log('✅ 精选特码记录批量保存完成:', { 
-          总数: allPeriods.length * allNumCounts.length,
+        console.log('✅ 精选特码记录保存完成:', { 
+          总数: allNumCounts.length,
           成功: successCount,
           失败: failCount 
         });

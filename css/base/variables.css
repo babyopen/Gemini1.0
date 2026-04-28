@@ -36,6 +36,12 @@
   
   /* 其他 */
   --overlay:rgba(0,0,0,0.75);   /* 遮罩色 */
+  --white:#FFFFFF;              /* 白色 */
+  --black:#000000;              /* 黑色 */
+  --gray-500:#888888;           /* 灰色500 */
+  --primary-dark:#0051d5;       /* 主色深变体 */
+  --ios-blue-dark:#0051d5;      /* iOS蓝色深变体 */
+  --tag-text:#1C1C1E;           /* 标签文本颜色 */
   
   /* 通用样式变量 */
   --shadow-sm:0 2px 8px rgba(0,0,0,0.06);
