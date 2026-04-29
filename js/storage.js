@@ -697,8 +697,11 @@ export const Storage = {
           updatedAt: Date.now()
         };
       } else {
+        // 生成唯一ID
+        const recordId = `hot_${recordData.issue}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         records.unshift({
           ...recordData,
+          id: recordId,
           createdAt: Date.now(),
           updatedAt: Date.now()
         });
@@ -746,6 +749,41 @@ export const Storage = {
       return Storage.set('hotNumbersRecords', []);
     } catch (e) {
       console.error('清除特码热门TOP5记录失败:', e);
+      return false;
+    }
+  },
+
+  /**
+   * 根据ID删除单条特码热门TOP5记录
+   * @param {string} recordId - 记录ID
+   * @returns {boolean} 是否成功
+   */
+  deleteHotNumbersRecordById: (recordId) => {
+    try {
+      if (!recordId) {
+        console.error('删除记录失败：缺少记录ID');
+        return false;
+      }
+
+      const records = Storage.get('hotNumbersRecords', []);
+      const filtered = records.filter(r => r.id !== recordId);
+
+      if (filtered.length === records.length) {
+        console.error('删除记录失败：未找到对应ID的记录', recordId);
+        return false;
+      }
+
+      const result = Storage.set('hotNumbersRecords', filtered);
+      
+      if (result) {
+        setTimeout(() => {
+          window.dispatchEvent(new StorageEvent('storage', { key: 'hotNumbersRecords' }));
+        }, 50);
+      }
+
+      return result;
+    } catch (e) {
+      console.error('删除特码热门TOP5记录失败:', e);
       return false;
     }
   },

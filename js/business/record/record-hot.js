@@ -48,12 +48,15 @@ export function renderHotNumbersHistory(container) {
         
         const item = document.createElement('div');
         item.className = 'history-item';
-        item.dataset.index = idx;
+        item.dataset.id = rec.id || '';
         item.innerHTML = `
           <div class="history-header">
             <div class="history-nums">第${rec.issue || ''}期 热门TOP5</div>
-            <div class="history-time">${dateStr}</div>
+            <div class="history-actions">
+              <button class="btn-mini btn-delete" data-action="deleteHotRecord" data-id="${rec.id || ''}">删除</button>
+            </div>
           </div>
+          <div class="history-time">${dateStr}</div>
           <div class="history-tags">
             <div class="history-tags-predicted">${predictedTagsHtml}</div>
             ${actualTagHtml ? `<div class="history-tags-actual">${actualTagHtml}</div>` : ''}
@@ -126,11 +129,15 @@ export function renderHotNumbersDetailHistory(container, toggle) {
 
         const item = document.createElement('div');
         item.className = 'history-item';
+        item.dataset.id = rec.id || '';
         item.innerHTML = `
           <div class="history-header">
             <div class="history-nums">第${rec.issue || ''}期 热门TOP5</div>
-            <div class="history-time">${dateStr}</div>
+            <div class="history-actions">
+              <button class="btn-mini btn-delete" data-action="deleteHotRecord" data-id="${rec.id || ''}">删除</button>
+            </div>
           </div>
+          <div class="history-time">${dateStr}</div>
           <div class="history-tags">
             <div class="history-tags-predicted">${predictedTagsHtml}</div>
             ${actualTagHtml ? `<div class="history-tags-actual">${actualTagHtml}</div>` : ''}

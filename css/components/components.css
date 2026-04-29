@@ -1379,6 +1379,14 @@
    margin-bottom: 8px; 
    font-size: 13px; 
  } 
+
+ .history-actions {
+   display: flex;
+   gap: 6px;
+   align-items: center;
+   flex-shrink: 0;
+ }
+
  .history-issue { 
    font-weight: 600; 
    color: var(--text);
@@ -1744,6 +1752,20 @@
   background: rgba(255, 59, 48, 0.1);
   color: var(--danger);
   border-color: rgba(255, 59, 48, 0.3);
+}
+
+.btn-mini.btn-delete {
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--danger);
+  border-color: rgba(255, 59, 48, 0.3);
+  font-size: 12px;
+  padding: 4px 8px;
+  min-width: auto;
+}
+
+.btn-mini.btn-delete:hover {
+  background: rgba(255, 59, 48, 0.2);
+  border-color: var(--danger);
 }
 
 .btn-mini:not(.active) {

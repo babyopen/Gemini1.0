@@ -540,6 +540,7 @@ export const record = {
       if (action === 'switchSpecialHistoryMode' && mode) record.switchSpecialHistoryMode(mode);
       if (action === 'switchSpecialHistoryCount' && count !== undefined) record.switchSpecialHistoryCount(count);
       if (action === 'clearHotNumbersHistory') record.clearHotNumbersHistory();
+      if (action === 'deleteHotRecord' && btn.dataset.id) record._deleteHotNumbersRecordById(btn.dataset.id);
       if (action === 'toggleSelectedZodiacCollapse') record.toggleSelectedZodiacCollapse();
       if (action === 'toggleSpecialCollapse') record.toggleSpecialCollapse();
       if (action === 'toggleSpecialDetailCollapse') record.toggleSpecialDetailCollapse();
@@ -688,6 +689,32 @@ export const record = {
       Storage.set('hotNumbersRecords', filtered);
       record.renderHotNumbersHistory();
       Toast.show('已删除记录');
+    } catch (error) {
+      console.error('[Record] 删除特码热门TOP5记录失败:', error);
+      Toast.show('删除失败，请重试');
+    }
+  },
+
+  /**
+   * 根据ID删除特码热门TOP5记录（新的统一删除方法）
+   * @param {string} recordId - 记录ID
+   */
+  _deleteHotNumbersRecordById: (recordId) => {
+    try {
+      if (!recordId) {
+        console.error('[Record] 删除记录失败：缺少记录ID');
+        Toast.show('删除失败，请重试');
+        return;
+      }
+
+      const result = Storage.deleteHotNumbersRecordById(recordId);
+      
+      if (result) {
+        record.renderHotNumbersHistory();
+        Toast.show('已删除记录');
+      } else {
+        Toast.show('删除失败，请重试');
+      }
     } catch (error) {
       console.error('[Record] 删除特码热门TOP5记录失败:', error);
       Toast.show('删除失败，请重试');
