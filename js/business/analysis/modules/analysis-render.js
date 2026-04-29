@@ -29,7 +29,7 @@ export const analysisRender = {
       let html = '';
       for(let i = 0; i < 6; i++) {
         const num = Number(codeArr[i]);
-        html += analysisCalc.buildBall(codeArr[i], analysisCalc.getColor(num), zodArr[i] || '');
+        html += analysisCalc.buildBall(codeArr[i], analysisCalc.getColor(num).cls, zodArr[i] || '');
       }
       html += '<div class="ball-sep">+</div>' + analysisCalc.buildBall(codeArr[6], s?.wave || 'red', zodArr[6] || '');
       
@@ -58,14 +58,14 @@ export const analysisRender = {
       
       let ballHtml = '<div class="ball-group">';
       hotNums.forEach(num => {
-        const color = analysisCalc.getColor(num);
+        const colorObj = analysisCalc.getColor(num);
         const zodiac = DataQuery._getZodiacByNum(num);
         const element = analysisCalc.getWuxing(num);
         const numStr = String(num).padStart(2, '0');
         const zodiacText = element ? `${zodiac}/${element}` : zodiac;
         ballHtml += `
           <div class="ball-item">
-            <div class="ball ${color}">${numStr}</div>
+            <div class="ball ${colorObj.cls}">${numStr}</div>
             <div class="ball-zodiac">${zodiacText}</div>
           </div>
         `;
@@ -290,10 +290,10 @@ export const analysisRender = {
             let balls = '';
             for(let i = 0; i < 6; i++) {
               const num = Number(codeArr[i]);
-              balls += analysisCalc.buildBall(codeArr[i], analysisCalc.getColor(num), zodArr[i] || '');
+              balls += analysisCalc.buildBall(codeArr[i], analysisCalc.getColor(num).cls, zodArr[i] || '');
             }
             const teNum = Number(codeArr[6]);
-            balls += '<div class="ball-sep">+</div>' + analysisCalc.buildBall(codeArr[6], analysisCalc.getColor(teNum), zodArr[6] || '');
+            balls += '<div class="ball-sep">+</div>' + analysisCalc.buildBall(codeArr[6], analysisCalc.getColor(teNum).cls, zodArr[6] || '');
             
             const itemDiv = document.createElement('div');
             itemDiv.className = 'history-item';
@@ -362,10 +362,10 @@ export const analysisRender = {
           let balls = '';
           for(let i = 0; i < 6; i++) {
             const num = Number(codeArr[i]);
-            balls += analysisCalc.buildBall(codeArr[i], analysisCalc.getColor(num), zodArr[i] || '');
+            balls += analysisCalc.buildBall(codeArr[i], analysisCalc.getColor(num).cls, zodArr[i] || '');
           }
           const teNum = Number(codeArr[6]);
-          balls += '<div class="ball-sep">+</div>' + analysisCalc.buildBall(codeArr[6], analysisCalc.getColor(teNum), zodArr[6] || '');
+          balls += '<div class="ball-sep">+</div>' + analysisCalc.buildBall(codeArr[6], analysisCalc.getColor(teNum).cls, zodArr[6] || '');
           
           const itemDiv = document.createElement('div');
           itemDiv.className = 'history-item';
@@ -1418,10 +1418,10 @@ export const analysisRender = {
         html += `
           <div class="zodiac-numbers-single-row">
             ${allNumbers.map(({ num, color }) => {
-              const colorClass = analysisCalc.getColor(num);
+              const colorObj = analysisCalc.getColor(num);
               const element = analysisCalc.getWuxing(num);
               return `<div class="zodiac-ball-wrapper" title="${color}波 · 五行：${element}">
-                <span class="zodiac-number ${colorClass}">${String(num).padStart(2, '0')}</span>
+                <span class="zodiac-number ${colorObj.cls}">${String(num).padStart(2, '0')}</span>
               </div>`;
             }).join('')}
           </div>

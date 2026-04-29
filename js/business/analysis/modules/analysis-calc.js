@@ -98,6 +98,7 @@ export const analysisCalc = {
   // 工具方法
   getTopEntry,
   getColor,
+  getColorName: (number) => getColor(number).cls,
   getElement,
   getZodiacNumbers,
   buildBall: _buildBall,
