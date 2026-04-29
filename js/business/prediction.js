@@ -697,8 +697,12 @@ export const prediction = {
           const firstResult = periods.length > 0 ? calculateData(periods[0]) : null;
           const pattern = firstResult?.algorithmDetails?.pattern || '-';
           const patternConfidence = firstResult?.algorithmDetails?.patternConfidence || 0;
+          const patternBonus = firstResult?.algorithmDetails?.patternBonus || 0;
+          const overheatPenalty = firstResult?.algorithmDetails?.overheatPenalty || 0;
+          const windowWeight = firstResult?.algorithmDetails?.windowWeight || 1;
           const marketInfo = firstResult?.algorithmDetails?.marketInfo || {};
           const multiWindow = firstResult?.algorithmDetails?.multiWindow || {};
+          const scoreComposition = firstResult?.algorithmDetails?.scoreComposition || {};
           
           const isAlternating = marketInfo.isAlternating;
           const marketBadge = isAlternating ? '<span style="display:inline-block;padding:2px 8px;background:#9C27B0;color:white;border-radius:10px;font-size:12px;margin-left:8px;">冷热交替行情</span>' : '';
@@ -740,7 +744,10 @@ export const prediction = {
                     </div>
                   </div>
                   <div style="text-align:center;font-size:12px;color:var(--sub-text);">
-                    可信度：${(patternConfidence * 100).toFixed(0)}%
+                    可信度：${(patternConfidence * 100).toFixed(0)}% | 窗口权重：×${windowWeight.toFixed(2)}
+                  </div>
+                  <div style="text-align:center;font-size:11px;color:var(--sub-text);margin-top:4px;">
+                    形态加成：${patternBonus >= 0 ? '+' : ''}${patternBonus}分 | 过热扣分：-${overheatPenalty}分
                   </div>
                 </div>
               </div>
@@ -798,6 +805,10 @@ export const prediction = {
                   <div>• 📊 频次统计：历史开出频率作为模型基础得分盘口</div>
                   <div style="margin-top:4px;">• 📈 走势识别：5/8/10期三窗口交叉验证，识别7种标准走势</div>
                   <div>• 🔄 冷热交替：检测行情类型，动态调整权重</div>
+                  <div style="margin-top:4px;font-weight:600;">📐 V3终极公式：</div>
+                  <div style="background:white;padding:8px;border-radius:6px;font-size:11px;margin-top:4px;">
+                    总分 = 基础分 + 形态加成 - 过热扣分 + 行情调整
+                  </div>
                 </div>
               </div>
             </div>

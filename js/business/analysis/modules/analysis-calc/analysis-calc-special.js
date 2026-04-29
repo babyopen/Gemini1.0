@@ -344,10 +344,36 @@ function calcWindowCrossScore(list, zodiac) {
   };
 }
 
+/**
+ * 获取热门号码 V3（四大核心算法版）
+ * 使用热号惯性 + 冷号回补 + 轮换平衡 + 频次统计
+ * @param {Array} historyData - 历史数据
+ * @param {number} targetCount - 目标数量
+ * @param {Map} fullNumZodiacMap - 号码生肖映射
+ * @returns {Array} 号码数组
+ */
+export function getHotNumbersV3(data, targetCount, fullNumZodiacMap, historyData) {
+  return getHotNumbers(data, targetCount, fullNumZodiacMap, historyData);
+}
+
+/**
+ * 获取冷号反弹号码 V3（四大核心算法版）
+ * 使用冷号遗漏回补算法
+ * @param {Object} data - 分析数据
+ * @param {number} targetCount - 目标数量
+ * @param {Map} fullNumZodiacMap - 号码生肖映射
+ * @returns {Array} 号码数组
+ */
+export function getColdReboundNumbersV3(data, targetCount, fullNumZodiacMap) {
+  return getColdReboundNumbers(data, targetCount, fullNumZodiacMap);
+}
+
 export default {
   decideAutoMode,
   getHotNumbers,
   getColdReboundNumbers,
+  getHotNumbersV3,
+  getColdReboundNumbersV3,
   calcNumberScore,
   calcRecentStats
 };

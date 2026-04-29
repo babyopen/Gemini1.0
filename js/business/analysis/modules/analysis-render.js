@@ -26,7 +26,7 @@ export const analysisRender = {
       const s = analysisCalc.getSpecial(item);
       const zodArr = s?.fullZodArr || [];
       
-      let html = '';
+            let html = '';
       for(let i = 0; i < 6; i++) {
         const num = Number(codeArr[i]);
         html += analysisCalc.buildBall(codeArr[i], analysisCalc.getColor(num).cls, zodArr[i] || '');
@@ -48,24 +48,25 @@ export const analysisRender = {
    * @param {Map} fullNumZodiacMap - 号码-生肖映射
    */
   updateHotConclusion: (data, fullNumZodiacMap) => {
-    // 构建热门特码的球号显示（使用多维度筛选算法）
+    // 构建热门特码的球号显示（使用V2.0五大核心算法）
     const buildHotNumberBalls = (hotNumStr) => {
-      // 使用多维度筛选算法获取热门号码
-      let hotNums = analysisCalc.getHotNumbers(data, 5, fullNumZodiacMap);
+      // 使用V2.0五大核心算法获取热门号码
+      const historyData = data?.historyData || StateManager._state.analysis?.historyData || [];
+      let hotNums = analysisCalc.getHotNumbersV2(historyData, 5, fullNumZodiacMap);
       
       // 按数字大小排序
       hotNums.sort((a, b) => a - b);
       
       let ballHtml = '<div class="ball-group">';
       hotNums.forEach(num => {
-        const colorObj = analysisCalc.getColor(num);
+        const color = analysisCalc.getColor(num).cls;
         const zodiac = DataQuery._getZodiacByNum(num);
         const element = analysisCalc.getWuxing(num);
         const numStr = String(num).padStart(2, '0');
         const zodiacText = element ? `${zodiac}/${element}` : zodiac;
         ballHtml += `
           <div class="ball-item">
-            <div class="ball ${colorObj.cls}">${numStr}</div>
+            <div class="ball ${color}">${numStr}</div>
             <div class="ball-zodiac">${zodiacText}</div>
           </div>
         `;
@@ -230,40 +231,10 @@ export const analysisRender = {
    * 虚拟列表组件
    */
   VirtualList: {
-    baseItemHeight: 72,
+    itemHeight: 72,
+    visibleCount: 20,
     buffer: 5,
     maxItemsForSimpleRender: 50,
-    
-    getItemHeight: function() {
-      const width = window.innerWidth;
-      if (width <= 320) return 58;
-      if (width <= 375) return 64;
-      if (width <= 414) return 70;
-      if (width <= 480) return 76;
-      if (width <= 768) return 82;
-      if (width <= 1024) return 88;
-      if (width <= 1200) return 94;
-      return 105;
-    },
-    
-    getVisibleCount: function() {
-      const width = window.innerWidth;
-      const baseOffset = width <= 480 ? 200 : 250;
-      const itemHeight = this.getItemHeight();
-      return Math.max(5, Math.floor((window.innerHeight - baseOffset) / itemHeight));
-    },
-    
-    getBallSize: function() {
-      const width = window.innerWidth;
-      if (width <= 320) return { ball: 24, font: 9, gap: 3 };
-      if (width <= 375) return { ball: 26, font: 10, gap: 3 };
-      if (width <= 414) return { ball: 28, font: 11, gap: 4 };
-      if (width <= 480) return { ball: 30, font: 12, gap: 4 };
-      if (width <= 768) return { ball: 32, font: 13, gap: 5 };
-      if (width <= 1024) return { ball: 34, font: 14, gap: 5 };
-      if (width <= 1200) return { ball: 36, font: 15, gap: 6 };
-      return { ball: 42, font: 17, gap: 8 };
-    },
     
     /**
      * 渲染虚拟列表
@@ -313,12 +284,10 @@ export const analysisRender = {
         return;
       }
       
-      const itemHeight = analysisRender.VirtualList.getItemHeight();
-      const visibleCount = analysisRender.VirtualList.getVisibleCount();
-      const totalHeight = data.length * itemHeight;
+      const totalHeight = data.length * analysisRender.VirtualList.itemHeight;
       
       container.innerHTML = `
-        <div class="virtual-list-container" style="position: relative; overflow-y: auto; height: ${visibleCount * itemHeight}px;">
+        <div class="virtual-list-container" style="position: relative; overflow-y: auto; height: ${analysisRender.VirtualList.visibleCount * analysisRender.VirtualList.itemHeight}px;">
           <div class="virtual-list-placeholder" style="height: ${totalHeight}px; position: relative;"></div>
           <div class="virtual-list-content" style="position: absolute; top: 0; left: 0; right: 0;"></div>
         </div>
@@ -331,7 +300,7 @@ export const analysisRender = {
       
       scrollContainer.addEventListener('scroll', () => {
         const scrollTop = scrollContainer.scrollTop;
-        const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - analysisRender.VirtualList.buffer);
+        const startIndex = Math.max(0, Math.floor(scrollTop / analysisRender.VirtualList.itemHeight) - analysisRender.VirtualList.buffer);
         analysisRender.VirtualList.update(contentContainer, data, startIndex);
       });
     },
@@ -343,14 +312,14 @@ export const analysisRender = {
      * @param {number} startIndex - 起始索引
      */
     update: (container, data, startIndex) => {
-      const itemHeight = analysisRender.VirtualList.getItemHeight();
-      const visibleCount = analysisRender.VirtualList.getVisibleCount();
-      const endIndex = Math.min(data.length, startIndex + visibleCount + analysisRender.VirtualList.buffer * 2);
+      const endIndex = Math.min(data.length, startIndex + analysisRender.VirtualList.visibleCount + analysisRender.VirtualList.buffer * 2);
       const visibleData = data.slice(startIndex, endIndex);
       
-      const offsetTop = startIndex * itemHeight;
+      // 计算偏移量
+      const offsetTop = startIndex * analysisRender.VirtualList.itemHeight;
       container.style.transform = `translateY(${offsetTop}px)`;
       
+      // 使用文档片段渲染可见项目
       const fragment = document.createDocumentFragment();
       
       visibleData.forEach((item, index) => {
@@ -919,33 +888,33 @@ export const analysisRender = {
     let hotNumbers = [];  // ✅ 热号数据
     let coldNumbers = []; // ✅ 冷号数据
 
-    // 根据模式选择不同的筛选策略
+    // 根据模式选择不同的筛选策略（使用V3.0四大核心算法）
     if(mode === 'cold') {
       // ❄️ 冷号反弹模式
-      coldNumbers = analysisCalc.getColdReboundNumbers(data, targetCount, fullNumZodiacMap);
+      coldNumbers = analysisCalc.getColdReboundNumbersV3(data, targetCount, fullNumZodiacMap);
       finalNums = [...coldNumbers];
       // ✅ 同时计算热号
-      hotNumbers = analysisCalc.getHotNumbers(data, targetCount, fullNumZodiacMap);
+      hotNumbers = analysisCalc.getHotNumbersV3(data, targetCount, fullNumZodiacMap);
     } else if(mode === 'auto') {
       // 🤖 自动模式：智能判断使用热号还是冷号模式
       const modeDecision = analysisCalc.decideAutoMode(data);
       if(modeDecision === 'cold') {
-        coldNumbers = analysisCalc.getColdReboundNumbers(data, targetCount, fullNumZodiacMap);
+        coldNumbers = analysisCalc.getColdReboundNumbersV3(data, targetCount, fullNumZodiacMap);
         finalNums = [...coldNumbers];
         // ✅ 同时计算热号
-        hotNumbers = analysisCalc.getHotNumbers(data, targetCount, fullNumZodiacMap);
+        hotNumbers = analysisCalc.getHotNumbersV3(data, targetCount, fullNumZodiacMap);
       } else {
-        hotNumbers = analysisCalc.getHotNumbers(data, targetCount, fullNumZodiacMap);
+        hotNumbers = analysisCalc.getHotNumbersV3(data, targetCount, fullNumZodiacMap);
         finalNums = [...hotNumbers];
         // ✅ 同时计算冷号
-        coldNumbers = analysisCalc.getColdReboundNumbers(data, targetCount, fullNumZodiacMap);
+        coldNumbers = analysisCalc.getColdReboundNumbersV3(data, targetCount, fullNumZodiacMap);
       }
     } else {
       // 🔥 热号模式（默认）
-      hotNumbers = analysisCalc.getHotNumbers(data, targetCount, fullNumZodiacMap);
+      hotNumbers = analysisCalc.getHotNumbersV3(data, targetCount, fullNumZodiacMap);
       finalNums = [...hotNumbers];
       // ✅ 同时计算冷号
-      coldNumbers = analysisCalc.getColdReboundNumbers(data, targetCount, fullNumZodiacMap);
+      coldNumbers = analysisCalc.getColdReboundNumbersV3(data, targetCount, fullNumZodiacMap);
     }
 
     // 排序
@@ -1016,10 +985,11 @@ export const analysisRender = {
       const issue = nextIssueObj.full;
       console.log('✅ 获取到下一期期号:', issue);
 
-      // ✅ 简化版：只定义号码数量选项（不再按期数保存）
+      // ✅ 定义所有筛选条件组合
+      const allPeriods = [10, 20, 30, 'all'];  // 所有期数选项
       const allNumCounts = [5, 10, 15, 20];    // 所有号码数量选项
       
-      console.log('🎯 准备保存精选特码记录:', { numCounts: allNumCounts });
+      console.log('🎯 准备保存所有筛选条件组合:', { periods: allPeriods, numCounts: allNumCounts });
 
       // 转换为字符串格式
       const allNumbersStr = finalNums.map(n => String(n).padStart(2, '0'));
@@ -1046,38 +1016,42 @@ export const analysisRender = {
         let successCount = 0;
         let failCount = 0;
         
-        // ✅ 简化版：只遍历所有号码数量选项（不再按期数保存）
-        allNumCounts.forEach(numCount => {
-          try {
-            // ✅ 只保存完整的号码列表，不截取
-            // 在显示时根据 numCount 动态截取
-            
-            // 构建记录对象
-            const recordData = {
-              issue: issue,
-              numCount: numCount,         // 号码数量：5/10/15/20
-              numbers: allNumbersStr,     // 保存完整列表
-              hotNumbers: hotNumbersStr,  // 保存完整热号列表
-              coldNumbers: coldNumbersStr, // 保存完整冷号列表
-              mode: mode,                // 保存当前模式
-              type: type                 // 保存类型（用于筛选）
-            };
-            
-            // 保存记录
-            const success = record.saveNumberRecord(recordData);
-            if (success) {
-              successCount++;
-            } else {
+        // 遍历所有期数选项
+        allPeriods.forEach(period => {
+          // 遍历所有号码数量选项
+          allNumCounts.forEach(numCount => {
+            try {
+              // ✅ 只保存完整的号码列表，不截取
+              // 在显示时根据 numCount 动态截取
+              
+              // 构建记录对象
+              const recordData = {
+                issue: issue,
+                period: period,           // 期数范围：10/20/30/all
+                numCount: numCount,       // 号码数量：5/10/15/20
+                numbers: allNumbersStr,   // 保存完整列表
+                hotNumbers: hotNumbersStr, // 保存完整热号列表
+                coldNumbers: coldNumbersStr, // 保存完整冷号列表
+                mode: mode,               // 保存当前模式
+                type: type                // 保存类型（用于筛选）
+              };
+              
+              // 保存记录
+              const success = record.saveNumberRecord(recordData);
+              if (success) {
+                successCount++;
+              } else {
+                failCount++;
+              }
+            } catch (err) {
+              console.error(`❌ 保存记录失败 [${period}期/${numCount}个]:`, err);
               failCount++;
             }
-          } catch (err) {
-            console.error(`❌ 保存记录失败 [${numCount}个]:`, err);
-            failCount++;
-          }
+          });
         });
         
-        console.log('✅ 精选特码记录保存完成:', { 
-          总数: allNumCounts.length,
+        console.log('✅ 精选特码记录批量保存完成:', { 
+          总数: allPeriods.length * allNumCounts.length,
           成功: successCount,
           失败: failCount 
         });
@@ -1418,10 +1392,10 @@ export const analysisRender = {
         html += `
           <div class="zodiac-numbers-single-row">
             ${allNumbers.map(({ num, color }) => {
-              const colorObj = analysisCalc.getColor(num);
+              const colorClass = analysisCalc.getColor(num).cls;
               const element = analysisCalc.getWuxing(num);
               return `<div class="zodiac-ball-wrapper" title="${color}波 · 五行：${element}">
-                <span class="zodiac-number ${colorObj.cls}">${String(num).padStart(2, '0')}</span>
+                <span class="zodiac-number ${colorClass}">${String(num).padStart(2, '0')}</span>
               </div>`;
             }).join('')}
           </div>
