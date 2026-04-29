@@ -69,10 +69,18 @@ async function initApp() {
       Business.startCountdown(),
       Business.checkDrawTimeLoop(),
       Business.startScheduledDataFetch(),
-      Business.initAnalysisPage(),
-      Business.record.init()
+      Business.initAnalysisPage()
     ]);
   }, 200); // 从300ms和600ms减少到200ms
+  
+  // 延迟初始化 record 页面（只在需要时加载）
+  setTimeout(() => {
+    try {
+      Business.record.init();
+    } catch(e) {
+      console.warn('Record 初始化失败:', e);
+    }
+  }, 500); // 延迟500ms再初始化 record，让首屏更快显示
   
   const bottomNav = document.querySelector('.bottom-nav');
   if(bottomNav) bottomNav.classList.add('needs-space');
