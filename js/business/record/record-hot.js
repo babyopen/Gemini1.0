@@ -30,9 +30,9 @@ export function renderHotNumbersHistory(container) {
         
         let predictedTagsHtml = '';
         if (rec.checked && rec.actualNumbers && Array.isArray(rec.actualNumbers) && rec.actualNumbers.length > 0) {
-          const specialNumber = rec.actualNumbers[rec.actualNumbers.length - 1];
           predictedTagsHtml = numbers.map(n => {
-            const tagClass = (rec.matched && n === specialNumber) ? 'history-tag history-tag-matched' : 'history-tag';
+            const isMatched = rec.matchedNumbers && rec.matchedNumbers.includes(n);
+            const tagClass = isMatched ? 'history-tag history-tag-matched' : 'history-tag';
             return `<div class="${tagClass}">${Utils.escapeHtml(n)}</div>`;
           }).join('');
         } else {
@@ -112,7 +112,9 @@ export function renderHotNumbersDetailHistory(container, toggle) {
 
         const predictedTagsHtml = numbers.map(n => {
           const numStr = typeof n === 'object' ? n.number : n;
-          return `<div class="history-tag">${numStr}</div>`;
+          const isMatched = rec.matchedNumbers && rec.matchedNumbers.includes(n);
+          const tagClass = isMatched ? 'history-tag history-tag-matched' : 'history-tag';
+          return `<div class="${tagClass}">${numStr}</div>`;
         }).join('');
 
         let actualTagHtml = '';

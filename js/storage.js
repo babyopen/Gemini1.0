@@ -580,11 +580,15 @@ export const Storage = {
         // 判断预测的TOP5号码中是否有任意一个命中实际开奖号码
         const matched = actualNumbers.some(num => record.numbers.includes(num));
         
+        // 找出具体匹配了哪些号码
+        const matchedNumbers = record.numbers.filter(n => actualNumbers.includes(n));
+        
         // 更新记录
         records[recordIndex] = {
           ...record,
           checked: true,
           matched: matched,
+          matchedNumbers: matchedNumbers,
           actualNumbers: actualNumbers,
           checkedAt: Date.now()
         };

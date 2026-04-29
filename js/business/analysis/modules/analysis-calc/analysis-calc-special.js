@@ -1,7 +1,19 @@
-// ====================== 精选特码算法模块 ======================
+// ====================== 精选特码算法模块 V2.0 ======================
+// 重构说明：
+// - 整合三窗口交叉形态识别（5/8/10期）
+// - 结合四大核心算法统一打分
+// - 冷热交替行情适配
 
-import { ZODIAC_ORDER, ZODIAC_ELEMENT, ELEMENT_GENERATE, TAIL_TO_ZODIAC, getZodiacNumbers, getColor, getElement } from './analysis-calc-utils.js';
+import { ZODIAC_ORDER, getColor, getElement } from './analysis-calc-utils.js';
 import { getSpecial } from './analysis-calc-full.js';
+import { 
+  calcHotInertia, 
+  calcMissRepair, 
+  calcCycleBalance, 
+  calcFrequencyScore,
+  calcFourAlgorithmFusion 
+} from './analysis-calc-core.js';
+import { detectMultiWindowPattern, detectColdHotAlternatingMarket } from './analysis-calc-patterns.js';
 
 /**
  * 自动模式决策
@@ -19,49 +31,213 @@ export function decideAutoMode(data) {
 }
 
 /**
- * 获取热门号码
- * @param {Object} data - 分析数据
+ * 统一的号码打分系统（核心公式）
+ * 总得分 = 基础频次分×动态权重 + 热号惯性加分 + 遗漏回补加分 + 轮转平衡得分 + 多窗口形态加权 - 过热衰减扣分
+ * @param {number} num - 号码
+ * @param {Object} params - 参数字段
+ * @returns {Object} 得分详情
+ */
+function calcNumberScore(num, params) {
+  const {
+    fullNumZodiacMap,
+    historyData,
+    isAlternatingMarket,
+    patternWeight = 1.0
+  } = params;
+
+  const zodiac = fullNumZodiacMap.get(num);
+  const list = historyData;
+  const totalPeriods = list.length;
+
+  if (!zodiac || totalPeriods === 0) {
+    return { totalScore: 0, baseScore: 0, bonusDetails: {} };
+  }
+
+  const zodMiss = {};
+  ZODIAC_ORDER.forEach(z => { zodMiss[z] = totalPeriods; });
+  list.forEach((item, idx) => {
+    const s = getSpecial(item);
+    if (zodMiss[s.zod] === totalPeriods) {
+      zodMiss[s.zod] = idx;
+    }
+  });
+
+  const avgMiss = totalPeriods / 12;
+
+  const zodCount = {};
+  ZODIAC_ORDER.forEach(z => { zodCount[z] = 0; });
+  list.forEach(item => {
+    const s = getSpecial(item);
+    zodCount[s.zod]++;
+  });
+
+  const zodiacStateMap = {};
+  const avgCount = totalPeriods / 12;
+  ZODIAC_ORDER.forEach(z => {
+    const count = zodCount[z];
+    const miss = zodMiss[z];
+    if (count >= avgCount * 1.5 && miss <= 3) {
+      zodiacStateMap[z] = 'hot';
+    } else if (count <= avgCount * 0.3 || miss >= avgMiss * 2) {
+      zodiacStateMap[z] = 'cold';
+    } else if (miss >= avgMiss * 1.5) {
+      zodiacStateMap[z] = 'warm';
+    } else {
+      zodiacStateMap[z] = 'normal';
+    }
+  });
+
+  const freqResult = calcFrequencyScore(zodCount[zodiac], totalPeriods, list);
+  const hotInertiaResult = calcHotInertia(list, zodiac, totalPeriods);
+  const missRepairResult = calcMissRepair(zodMiss[zodiac], avgMiss, totalPeriods);
+  const cycleBalanceResult = calcCycleBalance(zodiac, zodiacStateMap, zodCount[zodiac], totalPeriods, list);
+
+  let hotInertiaBonus = hotInertiaResult.hotInertiaBonus;
+  let missRepairBonus = missRepairResult.missRepairBonus;
+  let cycleBalanceBonus = cycleBalanceResult.cycleBalanceBonus;
+
+  // 冷热交替行情适配
+  if (isAlternatingMarket) {
+    cycleBalanceBonus *= 1.25;
+    if (hotInertiaResult.continuousHotCount > 3) {
+      hotInertiaBonus *= 0.6;
+    }
+  }
+
+  // 动态权重计算
+  const dynamicWeight = 1.0 + hotInertiaResult.hotInertiaCoeff + missRepairResult.missRepairCoeff;
+  
+  // 多窗口形态加权
+  const patternResult = detectMultiWindowPattern(list, zodiac);
+  const windowWeight = patternResult.windowWeight;
+
+  // 总得分公式
+  const baseWithWeight = freqResult.baseScore * dynamicWeight * patternWeight * windowWeight;
+  const totalScore = Math.round(
+    baseWithWeight +
+    hotInertiaBonus +
+    missRepairBonus +
+    cycleBalanceBonus
+  );
+
+  return {
+    num,
+    zodiac,
+    totalScore: Math.max(0, totalScore),
+    baseScore: freqResult.baseScore,
+    hotInertiaBonus,
+    missRepairBonus,
+    cycleBalanceBonus,
+    patternName: patternResult.pattern,
+    patternConfidence: patternResult.patternConfidence,
+    windowWeight,
+    bonusDetails: {
+      dynamicWeight,
+      hotInertiaCoeff: hotInertiaResult.hotInertiaCoeff,
+      missRepairCoeff: missRepairResult.missRepairCoeff,
+      cycleState: cycleBalanceResult.cycleState,
+      missLevel: missRepairResult.missLevel
+    }
+  };
+}
+
+/**
+ * 获取热门号码 V2（新逻辑）
+ * 使用三窗口交叉形态识别 + 四大核心算法统一打分
+ * @param {Array} historyData - 历史数据
  * @param {number} targetCount - 目标数量
  * @param {Map} fullNumZodiacMap - 号码生肖映射
- * @param {Array} historyData - 历史数据
- * @returns {Array} 号码数组
+ * @returns {Array} 号码数组（包含得分详情）
  */
 export function getHotNumbers(data, targetCount, fullNumZodiacMap, historyData) {
-  if (historyData && historyData.length > 0) {
-    return getHotNumbersV2(historyData, targetCount, fullNumZodiacMap);
-  }
-
-  let coreZodiacs = [];
-  if (data.sortedZodiacs && data.sortedZodiacs.length > 0) {
-    coreZodiacs = data.sortedZodiacs.slice(0, 6).map(i => i[0]);
-  } else if (data.topZod && Array.isArray(data.topZod)) {
-    coreZodiacs = data.topZod.slice(0, 6).map(i => i[0]);
-  } else if (data.zodiac) {
-    coreZodiacs = Object.entries(data.zodiac).sort((a, b) => b[1] - a[1]).slice(0, 6).map(i => i[0]);
-  }
-
-  let hotTails = [];
-  if (data.topTail && Array.isArray(data.topTail) && data.topTail.length > 0) {
-    hotTails = data.topTail.slice(0, 6).map(i => i.t !== undefined ? i.t : parseInt(i[0]));
-  } else if (data.tail) {
-    hotTails = Object.entries(data.tail).sort((a, b) => b[1] - a[1]).slice(0, 6).map(i => parseInt(i[0]));
-  }
+  const list = historyData && historyData.length > 0 ? historyData : (data?.historyData || []);
   
-  let hotColors = [];
-  if (data.topColor && Array.isArray(data.topColor) && data.topColor.length > 0) {
-    hotColors = data.topColor.slice(0, 2).map(i => i[0]);
-  } else if (data.color) {
-    hotColors = Object.entries(data.color).sort((a, b) => b[1] - a[1]).slice(0, 2).map(i => i[0]);
-  }
+  if (list.length === 0) return [];
+
+  // 检测冷热交替行情
+  const marketResult = detectColdHotAlternatingMarket(list);
+  const isAlternatingMarket = marketResult.isAlternating;
+
+  // 统计近期热门属性（用于形态识别）
+  const recentStats = calcRecentStats(list);
+
+  // 对所有49个号码计算统一得分
+  const allScores = [];
   
-  let hotHeads = [];
-  if (data.topHead && Array.isArray(data.topHead) && data.topHead.length > 0) {
-    hotHeads = data.topHead.slice(0, 3).map(i => parseInt(i[0]));
-  } else if (data.head) {
-    hotHeads = Object.entries(data.head).sort((a, b) => b[1] - a[1]).slice(0, 3).map(i => parseInt(i[0]));
+  for (let num = 1; num <= 49; num++) {
+    if (!fullNumZodiacMap.has(num)) continue;
+    
+    const scoreResult = calcNumberScore(num, {
+      fullNumZodiacMap,
+      historyData: list,
+      isAlternatingMarket,
+      recentStats,
+      patternWeight: 1.0
+    });
+    
+    allScores.push(scoreResult);
   }
 
-  return selectCandidateNumbers(coreZodiacs, hotTails, hotColors, hotHeads, targetCount, fullNumZodiacMap);
+  // 按总分排序
+  allScores.sort((a, b) => b.totalScore - a.totalScore);
+
+  // 返回目标数量的号码（提取号码数字）
+  return allScores.slice(0, targetCount).map(item => item.num);
+}
+
+/**
+ * 计算近期统计特征
+ * @param {Array} list - 历史数据
+ * @returns {Object} 统计结果
+ */
+function calcRecentStats(list) {
+  const stats = {
+    tailStats: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 },
+    colorStats: { '红': 0, '蓝': 0, '绿': 0 },
+    headStats: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 },
+    zodiacCount: {}
+  };
+
+  const recentList = list.slice(0, Math.min(10, list.length));
+  
+  recentList.forEach(item => {
+    const s = getSpecial(item);
+    
+    if (s.tail !== undefined && s.tail >= 0 && s.tail <= 9) {
+      stats.tailStats[s.tail]++;
+    }
+    if (s.colorName && stats.colorStats.hasOwnProperty(s.colorName)) {
+      stats.colorStats[s.colorName]++;
+    }
+    if (s.head !== undefined && s.head >= 0 && s.head <= 4) {
+      stats.headStats[s.head]++;
+    }
+    if (s.zod) {
+      stats.zodiacCount[s.zod] = (stats.zodiacCount[s.zod] || 0) + 1;
+    }
+  });
+
+  stats.hotTails = Object.entries(stats.tailStats)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(item => parseInt(item[0]));
+  
+  stats.hotColors = Object.entries(stats.colorStats)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(item => item[0]);
+  
+  stats.hotHeads = Object.entries(stats.headStats)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(item => parseInt(item[0]));
+  
+  stats.topZodiacs = Object.entries(stats.zodiacCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(item => item[0]);
+
+  return stats;
 }
 
 /**
@@ -72,129 +248,106 @@ export function getHotNumbers(data, targetCount, fullNumZodiacMap, historyData) 
  * @returns {Array} 号码数组
  */
 export function getColdReboundNumbers(data, targetCount, fullNumZodiacMap) {
-  let coreZodiacs = [];
+  const list = data?.historyData || [];
   
-  if (data.zodMiss) {
-    coreZodiacs = Object.entries(data.zodMiss).sort((a, b) => b[1] - a[1]).slice(0, 6).map(i => i[0]);
-  } else if (data.sortedZodiacs && data.sortedZodiacs.length > 0) {
-    coreZodiacs = data.sortedZodiacs.slice(-6).map(i => i[0]);
-  }
+  if (list.length === 0) return [];
 
-  let hotTails = [];
-  if (data.topTail && Array.isArray(data.topTail) && data.topTail.length > 0) {
-    hotTails = data.topTail.slice(0, 6).map(i => i.t !== undefined ? i.t : parseInt(i[0]));
-  } else if (data.tail) {
-    hotTails = Object.entries(data.tail).sort((a, b) => b[1] - a[1]).slice(0, 6).map(i => parseInt(i[0]));
-  }
+  const allScores = [];
   
-  let hotColors = [];
-  if (data.topColor && Array.isArray(data.topColor) && data.topColor.length > 0) {
-    hotColors = data.topColor.slice(0, 2).map(i => i[0]);
-  } else if (data.color) {
-    hotColors = Object.entries(data.color).sort((a, b) => b[1] - a[1]).slice(0, 2).map(i => i[0]);
-  }
-  
-  let hotHeads = [];
-  if (data.topHead && Array.isArray(data.topHead) && data.topHead.length > 0) {
-    hotHeads = data.topHead.slice(0, 3).map(i => parseInt(i[0]));
-  } else if (data.head) {
-    hotHeads = Object.entries(data.head).sort((a, b) => b[1] - a[1]).slice(0, 3).map(i => parseInt(i[0]));
-  }
-
-  return selectCandidateNumbers(coreZodiacs, hotTails, hotColors, hotHeads, targetCount, fullNumZodiacMap);
-}
-
-/**
- * 选择候选号码（核心筛选逻辑）
- */
-function selectCandidateNumbers(coreZodiacs, hotTails, hotColors, hotHeads, targetCount, fullNumZodiacMap) {
-  // 筛选候选号码（必须同时满足4个条件）
-  const candidateNums = [];
   for (let num = 1; num <= 49; num++) {
+    if (!fullNumZodiacMap.has(num)) continue;
+    
     const zodiac = fullNumZodiacMap.get(num);
-    if (!zodiac) continue;
+    const totalPeriods = list.length;
+
+    const zodMiss = {};
+    ZODIAC_ORDER.forEach(z => { zodMiss[z] = totalPeriods; });
+    list.forEach((item, idx) => {
+      const s = getSpecial(item);
+      if (zodMiss[s.zod] === totalPeriods) {
+        zodMiss[s.zod] = idx;
+      }
+    });
+
+    const avgMiss = totalPeriods / 12;
+    const missRepairResult = calcMissRepair(zodMiss[zodiac], avgMiss, totalPeriods);
+
+    const missBonus = missRepairResult.missRepairBonus;
+    const missLevel = missRepairResult.missLevel;
+
+    const score = missBonus + (missLevel === 'extreme_cold' ? 10 : 0) + (missLevel === 'deep_cold' ? 5 : 0);
     
-    const tail = num % 10;
-    const head = Math.floor(num / 10);
-    const colorName = getColor(num).name;
-    
-    if (coreZodiacs.includes(zodiac) && hotTails.includes(tail) && hotColors.includes(colorName) && hotHeads.includes(head)) {
-      candidateNums.push(num);
-    }
+    allScores.push({
+      num,
+      zodiac,
+      totalScore: score,
+      missBonus,
+      missLevel,
+      missPeriod: zodMiss[zodiac]
+    });
   }
+
+  allScores.sort((a, b) => b.totalScore - a.totalScore);
   
-  // 如果候选号码不足，放宽条件
-  if (candidateNums.length < targetCount) {
-    for (let num = 1; num <= 49; num++) {
-      if (candidateNums.includes(num)) continue;
-      const zodiac = fullNumZodiacMap.get(num);
-      if (!zodiac) continue;
-      const tail = num % 10;
-      const head = Math.floor(num / 10);
-      const colorName = getColor(num).name;
-      
-      let matchCount = 0;
-      if (coreZodiacs.includes(zodiac)) matchCount++;
-      if (hotTails.includes(tail)) matchCount++;
-      if (hotColors.includes(colorName)) matchCount++;
-      if (hotHeads.includes(head)) matchCount++;
-      
-      if (matchCount >= 3) candidateNums.push(num);
-    }
-  }
-  
-  if (candidateNums.length < targetCount) {
-    for (let num = 1; num <= 49; num++) {
-      if (candidateNums.includes(num)) continue;
-      const zodiac = fullNumZodiacMap.get(num);
-      if (!zodiac) continue;
-      const tail = num % 10;
-      const head = Math.floor(num / 10);
-      const colorName = getColor(num).name;
-      
-      let matchCount = 0;
-      if (coreZodiacs.includes(zodiac)) matchCount++;
-      if (hotTails.includes(tail)) matchCount++;
-      if (hotColors.includes(colorName)) matchCount++;
-      if (hotHeads.includes(head)) matchCount++;
-      
-      if (matchCount >= 2) candidateNums.push(num);
-    }
-  }
-  
-  return candidateNums.slice(0, targetCount);
+  // 返回号码数字数组
+  return allScores.slice(0, targetCount).map(item => item.num);
 }
 
 /**
- * 获取热门号码 V2（基于历史数据）
+ * 三窗口交叉验证得分
+ * @param {Array} list - 历史数据
+ * @param {string} zodiac - 生肖名称
+ * @returns {Object} 窗口得分
  */
-function getHotNumbersV2(historyData, targetCount, fullNumZodiacMap) {
-  const list = historyData.slice(0, Math.min(10, historyData.length));
+function calcWindowCrossScore(list, zodiac) {
+  const WINDOWS = {
+    short: 5,
+    mid: 8,
+    long: 10
+  };
+
+  const getZodiacState = (periodList) => {
+    const counts = {};
+    ZODIAC_ORDER.forEach(z => counts[z] = 0);
+    periodList.forEach(item => {
+      const z = getSpecial(item).zod;
+      if (counts.hasOwnProperty(z)) counts[z]++;
+    });
+    
+    const targetCount = counts[zodiac] || 0;
+    const avg = periodList.length / 12;
+    
+    if (targetCount >= avg * 1.5) return 'hot';
+    if (targetCount <= avg * 0.5) return 'cold';
+    return 'warm';
+  };
+
+  const shortList = list.slice(0, WINDOWS.short);
+  const midList = list.slice(0, WINDOWS.mid);
+  const longList = list.slice(0, WINDOWS.long);
+
+  const shortState = shortList.length >= 3 ? getZodiacState(shortList) : 'warm';
+  const midState = midList.length >= 5 ? getZodiacState(midList) : 'warm';
+  const longState = longList.length >= 7 ? getZodiacState(longList) : 'warm';
+
+  const stateScore = { hot: 3, warm: 2, cold: 1 };
   
-  // 统计热门属性
-  const tailStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
-  const colorStats = { '红': 0, '蓝': 0, '绿': 0 };
-  const headStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
-  const zodiacCount = {};
-  
-  list.forEach(item => {
-    const s = getSpecial(item);
-    tailStats[s.tail]++;
-    if (colorStats.hasOwnProperty(s.colorName)) colorStats[s.colorName]++;
-    if (s.head >= 0 && s.head <= 4) headStats[s.head]++;
-    zodiacCount[s.zod] = (zodiacCount[s.zod] || 0) + 1;
-  });
-  
-  const topZodiacs = Object.entries(zodiacCount).sort((a, b) => b[1] - a[1]).slice(0, 6).map(i => i[0]);
-  const hotTails = Object.entries(tailStats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(i => parseInt(i[0]));
-  const hotColors = Object.entries(colorStats).sort((a, b) => b[1] - a[1]).slice(0, 2).map(i => i[0]);
-  const hotHeads = Object.entries(headStats).sort((a, b) => b[1] - a[1]).slice(0, 3).map(i => parseInt(i[0]));
-  
-  return selectCandidateNumbers(topZodiacs, hotTails, hotColors, hotHeads, targetCount, fullNumZodiacMap);
+  const totalStateScore = stateScore[shortState] + stateScore[midState] * 1.5 + stateScore[longState];
+  const maxScore = stateScore.hot * (1 + 1.5 + 1);
+
+  return {
+    windowScore: totalStateScore / maxScore,
+    shortState,
+    midState,
+    longState,
+    midWeight: 1.5
+  };
 }
 
 export default {
   decideAutoMode,
   getHotNumbers,
-  getColdReboundNumbers
+  getColdReboundNumbers,
+  calcNumberScore,
+  calcRecentStats
 };
