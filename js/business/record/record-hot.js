@@ -118,7 +118,8 @@ export function renderHotNumbersDetailHistory(container, toggle) {
         let actualTagHtml = '';
         if (rec.checked && rec.actualNumbers && rec.actualNumbers.length > 0) {
           const actualClass = rec.matched ? 'history-tag history-tag-actual history-tag-matched' : 'history-tag history-tag-actual history-tag-miss';
-          actualTagHtml = `<div class="${actualClass}" data-type="actual">${rec.actualNumbers[0]}</div>`;
+          const specialNumber = rec.actualNumbers[rec.actualNumbers.length - 1];
+          actualTagHtml = `<div class="${actualClass}" data-type="actual">${specialNumber}</div>`;
         }
 
         const item = document.createElement('div');

@@ -10,8 +10,25 @@ const CONFIG = Object.freeze({
   
   // API配置（默认值，用户可自定义）
   API: Object.freeze({
+    // 主数据源
     LATEST: 'https://macaumarksix.com/api/macaujc2.com',
-    HISTORY: 'https://history.macaumarksix.com/history/macaujc2/y/'
+    HISTORY: 'https://history.macaumarksix.com/history/macaujc2/y/',
+    
+    // 备用数据源列表（按优先级排序）
+    FALLBACK_SOURCES: Object.freeze([
+      {
+        name: '备用数据源1',
+        latest: 'https://macaumarksix.com/api/macaujc2.com',
+        history: 'https://history.macaumarksix.com/history/macaujc2/y/',
+        priority: 1
+      },
+      {
+        name: '备用数据源2',
+        latest: 'https://api.macaumarksix.com/api',
+        history: 'https://history.macaumarksix.com/history/',
+        priority: 2
+      }
+    ])
   }),
   
   // 动画配置
@@ -149,7 +166,8 @@ const ApiConfig = {
         if (customConfig.latest && customConfig.history) {
           return {
             LATEST: customConfig.latest,
-            HISTORY: customConfig.history
+            HISTORY: customConfig.history,
+            FALLBACK_SOURCES: customConfig.fallbackSources || CONFIG.API.FALLBACK_SOURCES
           };
         }
       }
@@ -158,6 +176,37 @@ const ApiConfig = {
     }
     
     return CONFIG.API;
+  },
+  
+  /**
+   * 获取所有可用数据源（包括主数据源和备用数据源）
+   * @returns {Array} 数据源列表
+   */
+  getAllDataSources: () => {
+    const config = ApiConfig.getConfig();
+    const sources = [];
+    
+    // 添加主数据源（优先级最高）
+    sources.push({
+      name: '主数据源',
+      url: config.LATEST,
+      priority: 0,
+      isPrimary: true
+    });
+    
+    // 添加备用数据源
+    if (config.FALLBACK_SOURCES && Array.isArray(config.FALLBACK_SOURCES)) {
+      config.FALLBACK_SOURCES.forEach(source => {
+        sources.push({
+          name: source.name,
+          url: source.latest,
+          priority: source.priority,
+          isPrimary: false
+        });
+      });
+    }
+    
+    return sources;
   },
 
   /**
@@ -186,6 +235,54 @@ const ApiConfig = {
       return historyUrl + year;
     }
     return historyUrl;
+  },
+  
+  /**
+   * 获取所有历史数据源
+   * @param {number} [year] - 年份
+   * @returns {Array} 历史数据源列表
+   */
+  getAllHistorySources: (year) => {
+    const config = ApiConfig.getConfig();
+    const sources = [];
+    
+    // 添加主历史数据源
+    let mainUrl = config.HISTORY;
+    if (!mainUrl.endsWith('/')) {
+      mainUrl += '/';
+    }
+    if (year) {
+      mainUrl += year;
+    }
+    
+    sources.push({
+      name: '主数据源',
+      url: mainUrl,
+      priority: 0,
+      isPrimary: true
+    });
+    
+    // 添加备用历史数据源
+    if (config.FALLBACK_SOURCES && Array.isArray(config.FALLBACK_SOURCES)) {
+      config.FALLBACK_SOURCES.forEach(source => {
+        let url = source.history;
+        if (!url.endsWith('/')) {
+          url += '/';
+        }
+        if (year) {
+          url += year;
+        }
+        
+        sources.push({
+          name: source.name,
+          url: url,
+          priority: source.priority,
+          isPrimary: false
+        });
+      });
+    }
+    
+    return sources;
   },
 
   /**

@@ -943,10 +943,11 @@
 /* 精选特码和热门特码专用紧凑样式 */
 .final-recommend-z .ball-group,
 .analysis-item-full .ball-group {
-  gap: clamp(4px, 2vw, 10px);
+  gap: clamp(2px, 1vw, 6px);
   margin: 8px 0;
   flex-wrap: wrap;
   overflow-x: visible;
+  justify-content: flex-start;
 }
 
 .final-recommend-z .ball,

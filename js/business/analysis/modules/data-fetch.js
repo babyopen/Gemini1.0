@@ -73,17 +73,13 @@ export const dataFetch = {
   _fetchLatestData: async (retries = 3) => {
     dataFetch._log('info', `开始获取最新开奖记录，重试次数: ${retries}`);
     
-    // 定义数据源
-    const dataSources = [
-      {
-        name: '主数据源',
-        url: ApiConfig.getLatestApi()
-      }
-    ];
+    // 获取所有可用数据源（包括主数据源和备用数据源）
+    const dataSources = ApiConfig.getAllDataSources();
+    dataFetch._log('info', `共找到 ${dataSources.length} 个数据源`);
     
     // 尝试每个数据源
     for (const source of dataSources) {
-      dataFetch._log('info', `尝试从 ${source.name} 获取最新开奖数据: ${source.url}`);
+      dataFetch._log('info', `尝试从 ${source.name} (优先级: ${source.priority}) 获取最新开奖数据: ${source.url}`);
       
       for (let i = 0; i < retries; i++) {
         try {
@@ -96,6 +92,7 @@ export const dataFetch = {
             throw new Error(`API请求失败: ${res.status} ${res.statusText}`);
           }
           
+          dataFetch._log('info', `✅ ${source.name} 获取成功！`);
           dataFetch._log('info', '响应成功，开始解析数据...');
           const data = await res.json();
           dataFetch._log('info', `数据解析成功，数据长度: ${data ? data.length : 0}`);
@@ -128,49 +125,61 @@ export const dataFetch = {
    */
   _fetchHistoryData: async (year, retries = 3) => {
     dataFetch._log('info', `开始获取历史数据，年份: ${year}，重试次数: ${retries}`);
-    const url = ApiConfig.getHistoryApi(year);
-    dataFetch._log('debug', `请求URL: ${url}`);
     
-    for (let i = 0; i < retries; i++) {
-      try {
-        dataFetch._log('info', `尝试 ${i + 1}/${retries} 获取数据...`);
-        const res = await dataFetch._fetchWithTimeout(url);
-        
-        dataFetch._log('debug', `响应状态: ${res.status} ${res.statusText}`);
-        
-        if (!res.ok) {
-          throw new Error(`API请求失败: ${res.status} ${res.statusText}`);
-        }
-        
-        dataFetch._log('info', '响应成功，开始解析数据...');
-        const response = await res.json();
-        dataFetch._log('info', `数据解析成功，响应: ${JSON.stringify(response).substring(0, 200)}`);
-        
-        // 处理两种不同的响应格式
-        if (Array.isArray(response)) {
-          // 格式1: 直接返回数组（某些 API）
-          return response;
-        } else if (response.result && response.data) {
-          // 格式2: {result, code, data} 格式
-          if (response.result === true && Array.isArray(response.data)) {
-            return response.data;
+    // 获取所有可用历史数据源
+    const historySources = ApiConfig.getAllHistorySources(year);
+    dataFetch._log('info', `共找到 ${historySources.length} 个历史数据源`);
+    
+    // 尝试每个历史数据源
+    for (const source of historySources) {
+      dataFetch._log('info', `尝试从 ${source.name} (优先级: ${source.priority}) 获取历史数据: ${source.url}`);
+      
+      for (let i = 0; i < retries; i++) {
+        try {
+          dataFetch._log('info', `尝试 ${i + 1}/${retries} 获取数据...`);
+          const res = await dataFetch._fetchWithTimeout(source.url);
+          
+          dataFetch._log('debug', `响应状态: ${res.status} ${res.statusText}`);
+          
+          if (!res.ok) {
+            throw new Error(`API请求失败: ${res.status} ${res.statusText}`);
           }
+          
+          dataFetch._log('info', `✅ ${source.name} 获取成功！`);
+          dataFetch._log('info', '响应成功，开始解析数据...');
+          const response = await res.json();
+          dataFetch._log('info', `数据解析成功，响应: ${JSON.stringify(response).substring(0, 200)}`);
+          
+          // 处理两种不同的响应格式
+          if (Array.isArray(response)) {
+            // 格式1: 直接返回数组（某些 API）
+            return response;
+          } else if (response.result && response.data) {
+            // 格式2: {result, code, data} 格式
+            if (response.result === true && Array.isArray(response.data)) {
+              return response.data;
+            }
+          }
+          
+          // 如果都不匹配，返回空数组
+          dataFetch._log('warn', '未识别的响应格式，尝试下一个数据源:', response);
+          break; // 尝试下一个数据源
+        } catch (e) {
+          dataFetch._log('error', `从 ${source.name} 获取历史数据失败（尝试 ${i + 1}/${retries}）:`, e);
+          if (i === retries - 1) {
+            dataFetch._log('warn', `${source.name} 不可用，尝试下一个数据源`);
+            break; // 尝试下一个数据源
+          }
+          // 等待一段时间后重试
+          const waitTime = 1000 * (i + 1);
+          dataFetch._log('info', `等待 ${waitTime} 毫秒后重试...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
         }
-        
-        // 如果都不匹配，返回空数组
-        dataFetch._log('warn', '未识别的响应格式:', response);
-        return [];
-      } catch (e) {
-        dataFetch._log('error', `获取历史数据失败（尝试 ${i + 1}/${retries}）:`, e);
-        if (i === retries - 1) {
-          throw e;
-        }
-        // 等待一段时间后重试
-        const waitTime = 1000 * (i + 1);
-        dataFetch._log('info', `等待 ${waitTime} 毫秒后重试...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
+    
+    // 所有数据源都失败
+    throw new Error('所有历史数据源都不可用');
   },
 
   /**
